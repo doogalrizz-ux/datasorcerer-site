@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Greg Macgowan — The Data Sorcerer</title>
+  <style>
+    /* ── Reset & Base ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0e17;
+      --surface:   #131722;
+      --border:    #1e2435;
+      --gold:      #c9a84c;
+      --gold-dim:  #8a6e2f;
+      --teal:      #4ec9b0;
+      --text:      #d4d8e8;
+      --muted:     #7a8099;
+      --heading:   #eef0f8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      font-size: 1.05rem;
+      line-height: 1.75;
+    }
+
+    a { color: var(--gold); text-decoration: none; }
+    a:hover { color: var(--teal); }
+
+    /* ── Layout helpers ─────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    section {
+      padding: 5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+
+    h2 {
+      font-size: 2rem;
+      color: var(--heading);
+      font-weight: normal;
+      margin-bottom: 1.75rem;
+    }
+
+    p { margin-bottom: 1.25rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Nav ────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 14, 23, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .nav-links a:hover { color: var(--gold); }
+
+    /* ── Hero ───────────────────────────────────────── */
+    #hero {
+      padding: 7rem 0 6rem;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #hero::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -180px;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-name {
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      color: var(--heading);
+      font-weight: normal;
+      line-height: 1.1;
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-title {
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .hero-tagline {
+      font-size: 1.2rem;
+      color: var(--text);
+      max-width: 560px;
+      border-left: 3px solid var(--gold-dim);
+      padding-left: 1.25rem;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* ── Who I Am ───────────────────────────────────── */
+    #who blockquote {
+      border-left: 3px solid var(--gold-dim);
+      padding-left: 1.25rem;
+      margin: 1.5rem 0;
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    /* ── How I Work ─────────────────────────────────── */
+    .principles {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .principle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      padding: 1.25rem 1.5rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .principle strong {
+      display: block;
+      color: var(--heading);
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    .principle p {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.97rem;
+    }
+
+    /* ── Outside ────────────────────────────────────── */
+    #outside .highlight {
+      color: var(--teal);
+    }
+
+    /* ── Portfolio ──────────────────────────────────── */
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .portfolio-placeholder {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+
+    .portfolio-placeholder::before {
+      content: '[ ]';
+      display: block;
+      font-size: 1.4rem;
+      margin-bottom: 0.75rem;
+      color: var(--border);
+    }
+
+    .portfolio-card {
+      background: var(--surface);
+      border: 1px solid var(--gold-dim);
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .portfolio-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .portfolio-card-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--gold-lt);
+    }
+
+    .portfolio-card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .portfolio-card-link {
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: var(--gold);
+      margin-top: 0.25rem;
+    }
+
+    /* ── Footer ─────────────────────────────────────── */
+    footer {
+      padding: 3rem 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--gold); }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 600px) {
+      .nav-links { gap: 1rem; }
+      #hero { padding: 4rem 0; }
+      h2 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <span class="nav-brand">datasorcerer.net</span>
+    <ul class="nav-links">
+      <li><a href="#who">About</a></li>
+      <li><a href="#how">Principles</a></li>
+      <li><a href="#outside">Outside Work</a></li>
+      <li><a href="#portfolio">Portfolio</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section id="hero">
+    <div class="container">
+      <h1 class="hero-name">Greg Macgowan</h1>
+      <p class="hero-title">The Data Sorcerer</p>
+      <p class="hero-tagline">
+        You come to me with a question.<br>
+        I'll give you a vector by close of business,<br>
+        and a magnitude in two days.
+      </p>
+    </div>
+  </section>
+
+  <!-- Who I Am -->
+  <section id="who">
+    <div class="container">
+      <p class="section-label">// who I am</p>
+      <h2>20+ years in the room<br>where the data was built.</h2>
+      <p>
+        I spent 20+ years at Verizon doing something most data people don't get to do:
+        staying long enough to actually <em>know</em> the data, instead of just querying it.
+      </p>
+      <blockquote>
+        There's a difference between a wizard and a sorcerer. A wizard studies — meticulously,
+        slowly — and eventually hands you a beautiful, complex dashboard that only they know
+        how to read. A sorcerer already has the power innate and can provide the answers you seek from his long accumulated knowledge.
+      </blockquote>
+      <p>
+        I was in the room when the data was built. I don't need weeks to study it — I need
+        minutes to draw on it. That's where the nickname came from. A VP I worked under,
+        both of us D&amp;D players, needed a title that actually described what I did.
+        Not "analyst." Not "wizard." <strong>Sorcerer.</strong>
+      </p>
+      <p>
+        Give me a fire drill, and I'll tell you by end of day whether your promotion is
+        statistically significant and worth continuing. Give me two more days, and I'll
+        tell you exactly how many dollars it's worth. Speed first, precision close behind —
+        not the other way around.
+      </p>
+    </div>
+  </section>
+
+  <!-- How I Work -->
+  <section id="how">
+    <div class="container">
+      <p class="section-label">// how I work</p>
+      <h2>Principles, not process.</h2>
+      <div class="principles">
+        <div class="principle">
+          <strong>I share, not hoard.</strong>
+          <p>Every spreadsheet I hand off comes with the SQL behind it. If I'm on vacation,
+          someone else just runs the query. No bus-factor-of-one nonsense.</p>
+        </div>
+        <div class="principle">
+          <strong>I prepare so execution looks easy.</strong>
+          <p>I was one of the first people tapped to work in Verizon's new BigQuery environment,
+          and instead of waiting for requirements, I started building the "Lego blocks" — small,
+          reusable, minimum-viable components that later became the foundation the rest of the
+          department's systems were built on. That's the real trick behind fast answers: the
+          backend work is already done before you ask the question. By the time there's a fire
+          drill, I'm not starting from zero — I'm just assembling pieces I built months earlier.</p>
+        </div>
+        <div class="principle">
+          <strong>I go where I'm needed.</strong>
+          <p>Most of my career moves weren't applications — they were people I'd worked with
+          reaching out years later because they remembered what I could do.</p>
+        </div>
+        <div class="principle">
+          <strong>I'm hands-on with AI, not afraid of it.</strong>
+          <p>I use Claude Code daily. I know where it earns its keep, and I know where a
+          deterministic, boring answer is still the right one.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Outside the Spreadsheets -->
+  <section id="outside">
+    <div class="container">
+      <p class="section-label">// outside the spreadsheets</p>
+      <h2>Same guy. Different systems.</h2>
+      <p>
+        When I'm not knee-deep in data, I'm usually knee-deep in a different kind of system.
+        I'm a "spreadsheet sim" guy at heart — <span class="highlight">Out of the Park Baseball</span>,
+        <span class="highlight">Battletech</span>, <span class="highlight">Rule the Waves 3</span>,
+        and lately <span class="highlight">Football Manager</span>. If it has depth, numbers,
+        and a strategy layer, I'm in.
+      </p>
+      <p>
+        I also sim race — not particularly well, but I once beat NASCAR Hall of Famer
+        Bobby Labonte in an iRacing event. (In fairness, he got wrecked by someone else
+        four laps in. I'll take the win anyway.)
+      </p>
+      <p>
+        I lead an alliance in a mobile strategy game, where — no surprise — I built a
+        dedicated planning channel so our generals could actually execute complex plans
+        instead of freezing under pressure. Old habits.
+      </p>
+      <p>
+        Above all, I'm a present father to four sons and a husband who made a promise
+        a long time ago that work would never come before family dinner — and 25 years
+        later, that's still true.
+      </p>
+    </div>
+  </section>
+
+  <!-- Portfolio -->
+  <section id="portfolio">
+    <div class="container">
+      <p class="section-label">// portfolio</p>
+      <h2>Projects</h2>
+      <p style="color: var(--muted); font-family: 'Courier New', monospace; font-size: 0.9rem; margin-bottom: 1.5rem;">
+        Work in progress — projects added as they're built.
+      </p>
+      <div class="portfolio-grid">
+        <a href="/jeopardy/" class="portfolio-card">
+          <div class="portfolio-card-title">Jeopardy Trainer</div>
+          <div class="portfolio-card-desc">30 questions pulled from real Jeopardy episodes — complete categories, honor system scoring, daily leaderboard. Built on Cloudflare Workers + D1.</div>
+          <div class="portfolio-card-link">Play →</div>
+        </a>
+        <a href="/f1/" class="portfolio-card">
+          <div class="portfolio-card-title">F1 SQL Challenge</div>
+          <div class="portfolio-card-desc">Four real-world SQL problems built on Formula 1 race data going back to 1950. Write your own queries, run them live against the database, and check your answers.</div>
+          <div class="portfolio-card-link">Try it →</div>
+        </a>
+        <a href="/bridge/" class="portfolio-card">
+          <div class="portfolio-card-title">Bridge Bidding Trainer</div>
+          <div class="portfolio-card-desc">100 SAYC hand scenarios, 10 randomly selected per session. Full bidding box with legal bid enforcement — Pass, Double, Redouble included. Immediate feedback explaining the why behind every correct bid.</div>
+          <div class="portfolio-card-link">Practice →</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>Greg Macgowan &nbsp;·&nbsp; datasorcerer.net &nbsp;·&nbsp;
+        <a href="mailto:greg.magowan@gmail.com">greg.magowan@gmail.com</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

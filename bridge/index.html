@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAY Bridge Bidding Trainer — datasorcerer.net</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0b0e17;
+      --surface:  #131722;
+      --surface2: #1a2035;
+      --felt:     #1a3a2a;
+      --felt2:    #14301f;
+      --gold:     #c9a84c;
+      --gold-lt:  #f0c84a;
+      --text:     #d4d8e8;
+      --muted:    #7a8099;
+      --border:   #1e2a40;
+      --red:      #e74c3c;
+      --red-lt:   #ff6b6b;
+      --pass:     #2ecc71;
+      --fail:     #e74c3c;
+      --card-bg:  #f8f4ec;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .bridge-logo {
+      font-size: 1.4rem;
+      letter-spacing: 0.05em;
+      color: var(--gold-lt);
+      font-family: 'Georgia', serif;
+    }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: normal;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .sayc-badge {
+      font-family: monospace;
+      font-size: 0.7rem;
+      background: var(--gold);
+      color: #000;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+    }
+
+    header .site-link {
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* ── Progress bar ────────────────────────────────── */
+    .progress-wrap {
+      background: var(--surface);
+      padding: 0.6rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .progress-label {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: width 0.4s;
+    }
+
+    .score-label {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+
+    /* ── Main layout ─────────────────────────────────── */
+    .game-area {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 220px 1fr 280px;
+      gap: 0;
+      min-height: 0;
+    }
+
+    /* ── Hand panel ──────────────────────────────────── */
+    .hand-panel {
+      background: var(--felt);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      padding: 1.5rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .panel-label {
+      font-family: monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 0.25rem;
+    }
+
+    .hand-display {
+      background: var(--card-bg);
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      color: #1a1a1a;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      line-height: 2;
+    }
+
+    .suit-row { display: flex; align-items: baseline; gap: 0.4rem; }
+    .suit-sym { font-size: 1.15rem; font-weight: bold; min-width: 1.2rem; }
+    .suit-sym.red { color: var(--red); }
+    .suit-sym.black { color: #1a1a1a; }
+    .suit-cards { letter-spacing: 0.05em; font-size: 0.95rem; }
+
+    .hand-info {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.8;
+    }
+
+    .hand-info strong { color: var(--gold); }
+
+    /* ── Center panel ────────────────────────────────── */
+    .center-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    /* Auction table */
+    .auction-wrap {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .auction-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: monospace;
+    }
+
+    .auction-table th {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.1em;
+    }
+
+    .auction-table th.you {
+      color: var(--gold);
+    }
+
+    .auction-table td {
+      padding: 0.35rem 0.5rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .auction-table td.you-cell {
+      color: var(--gold-lt);
+      font-weight: bold;
+    }
+
+    .bid-call { white-space: nowrap; }
+    .bid-call.red-bid { color: var(--red-lt); }
+    .bid-call.pass-bid { color: var(--muted); font-style: italic; }
+    .bid-call.x-bid { color: var(--red-lt); font-weight: bold; }
+    .bid-call.question { color: var(--gold-lt); font-size: 1.1rem; }
+
+    /* Category / vul row */
+    .context-row {
+      padding: 0.5rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 1.5rem;
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .context-row span strong { color: var(--text); }
+
+    .vul-none { color: var(--muted); }
+    .vul-ns   { color: var(--red-lt); }
+    .vul-ew   { color: #f39c12; }
+    .vul-both { color: var(--red-lt); }
+
+    /* Feedback area */
+    .feedback-wrap {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .feedback-idle {
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .feedback-result {
+      display: none;
+    }
+
+    .feedback-result.visible { display: block; }
+
+    .verdict-banner {
+      padding: 0.85rem 1.1rem;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-family: 'Georgia', serif;
+      margin-bottom: 1rem;
+    }
+
+    .verdict-banner.correct {
+      background: rgba(46,204,113,0.12);
+      border: 1px solid var(--pass);
+      color: var(--pass);
+    }
+
+    .verdict-banner.wrong {
+      background: rgba(231,76,60,0.10);
+      border: 1px solid var(--fail);
+      color: #f09090;
+    }
+
+    .verdict-you {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .verdict-explanation {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .verdict-accepted {
+      margin-top: 0.6rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .btn-next {
+      margin-top: 1.2rem;
+      padding: 0.7rem 2rem;
+      background: var(--gold);
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-next:hover { background: var(--gold-lt); }
+
+    /* ── Bidding box panel ───────────────────────────── */
+    .bid-panel {
+      background: var(--surface2);
+      border-left: 1px solid var(--border);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .bid-panel .panel-label { color: rgba(255,255,255,0.35); }
+
+    .special-bids {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .bid-level {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.35rem;
+    }
+
+    .bid-btn {
+      padding: 0.55rem 0.2rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.1s, border-color 0.1s;
+      user-select: none;
+    }
+
+    .bid-btn:hover:not(:disabled):not(.bid-disabled) {
+      background: var(--surface2);
+      border-color: var(--gold);
+      color: var(--gold-lt);
+    }
+
+    .bid-btn.bid-disabled {
+      opacity: 0.22;
+      cursor: not-allowed;
+    }
+
+    .bid-btn.bid-selected {
+      background: var(--gold);
+      color: #000;
+      border-color: var(--gold-lt);
+      font-weight: bold;
+    }
+
+    .bid-btn.suit-h, .bid-btn.suit-d { color: var(--red-lt); }
+    .bid-btn.suit-h.bid-selected, .bid-btn.suit-d.bid-selected { color: #000; }
+
+    .bid-btn.pass-btn { color: var(--muted); }
+    .bid-btn.x-btn { color: var(--red-lt); font-weight: bold; }
+    .bid-btn.xx-btn { color: var(--red-lt); }
+
+    .bid-confirm {
+      margin-top: 0.5rem;
+      padding: 0.65rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .bid-confirm.has-selection {
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.7rem;
+      background: var(--felt2);
+      border: 1px solid var(--gold);
+      border-radius: 4px;
+      color: var(--gold);
+      font-family: 'Georgia', serif;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-submit:hover:not(:disabled) { background: var(--felt); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Game over screen ────────────────────────────── */
+    #screen-gameover {
+      display: none;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 3rem;
+      text-align: center;
+    }
+
+    #screen-gameover.visible { display: flex; }
+
+    #screen-gameover h2 {
+      font-size: 2rem;
+      color: var(--gold-lt);
+      font-weight: normal;
+    }
+
+    .final-score-display {
+      font-family: monospace;
+      font-size: 3.5rem;
+      color: var(--gold-lt);
+    }
+
+    .score-breakdown {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 2;
+      max-width: 500px;
+      text-align: left;
+    }
+
+    .score-breakdown .wrong-item { color: var(--red-lt); }
+    .score-breakdown .right-item { color: var(--pass); }
+
+    .btn-restart {
+      padding: 0.8rem 2.5rem;
+      background: var(--gold);
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-restart:hover { background: var(--gold-lt); }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 800px) {
+      .game-area { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .bid-panel { border-left: none; border-top: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="bridge-logo">♠♥♦♣</div>
+  <h1>Standard American Yellow Card — Bidding Trainer</h1>
+  <span class="sayc-badge">SAYC</span>
+  <span class="site-link">datasorcerer.net</span>
+</header>
+
+<div class="progress-wrap">
+  <span class="progress-label" id="progress-label">Question 1 of 10</span>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <span class="score-label" id="score-label">0 / 0</span>
+</div>
+
+<div class="game-area" id="game-area">
+
+  <!-- Hand panel -->
+  <div class="hand-panel">
+    <div>
+      <div class="panel-label">Your Hand</div>
+      <div class="hand-display" id="hand-display"></div>
+    </div>
+    <div class="hand-info" id="hand-info"></div>
+  </div>
+
+  <!-- Center panel -->
+  <div class="center-panel">
+    <div class="auction-wrap">
+      <div class="panel-label" style="margin-bottom:0.5rem">Auction</div>
+      <table class="auction-table" id="auction-table">
+        <thead><tr>
+          <th id="th-N">N</th><th id="th-E">E</th><th id="th-S">S</th><th id="th-W">W</th>
+        </tr></thead>
+        <tbody id="auction-body"></tbody>
+      </table>
+    </div>
+
+    <div class="context-row" id="context-row"></div>
+
+    <div class="feedback-wrap">
+      <div class="feedback-idle" id="feedback-idle">Select your bid from the bidding box →</div>
+      <div class="feedback-result" id="feedback-result">
+        <div class="verdict-banner" id="verdict-banner"></div>
+        <div class="verdict-you" id="verdict-you"></div>
+        <div class="verdict-explanation" id="verdict-explanation"></div>
+        <div class="verdict-accepted" id="verdict-accepted"></div>
+        <button class="btn-next" id="btn-next" onclick="nextQuestion()">Next Question →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bidding box panel -->
+  <div class="bid-panel">
+    <div class="panel-label">Bidding Box</div>
+
+    <div class="special-bids">
+      <button class="bid-btn pass-btn" id="bid-P" onclick="selectBid('P')">Pass</button>
+      <button class="bid-btn x-btn"    id="bid-X" onclick="selectBid('X')">Dbl</button>
+      <button class="bid-btn xx-btn"   id="bid-XX" onclick="selectBid('XX')">Rdbl</button>
+    </div>
+
+    <div id="bid-levels"></div>
+
+    <div class="bid-confirm" id="bid-confirm">— no bid selected —</div>
+    <button class="btn-submit" id="btn-submit" onclick="submitBid()" disabled>Submit Bid</button>
+  </div>
+
+</div>
+
+<!-- Game over screen -->
+<div id="screen-gameover">
+  <h2>Session Complete</h2>
+  <div class="final-score-display" id="final-score-display">0 / 10</div>
+  <div class="score-breakdown" id="score-breakdown"></div>
+  <button class="btn-restart" onclick="initSession()">New Session</button>
+</div>
+
+<script>
+// ── Suit helpers ──────────────────────────────────────────────────────────────
+const SYM = {S:'♠', H:'♥', D:'♦', C:'♣', N:'NT'};
+const RED_SUITS = new Set(['H','D']);
+
+function bidLabel(b) {
+  if (b === 'P')  return 'Pass';
+  if (b === 'X')  return 'Dbl';
+  if (b === 'XX') return 'Rdbl';
+  const level = b[0], suit = b[1];
+  return level + (suit === 'N' ? 'NT' : SYM[suit]);
+}
+
+function bidClass(b) {
+  if (b === 'P')  return 'pass-bid';
+  if (b === 'X')  return 'x-bid';
+  if (b === 'XX') return 'x-bid';
+  if (RED_SUITS.has(b[1])) return 'red-bid';
+  return '';
+}
+
+// ── Bid ordering ──────────────────────────────────────────────────────────────
+const BID_ORDER = [];
+for (let lv = 1; lv <= 7; lv++) {
+  for (const s of ['C','D','H','S','N']) {
+    BID_ORDER.push(lv + s);
+  }
+}
+
+function bidRank(b) { return BID_ORDER.indexOf(b); }
+
+function highestBid(auction) {
+  let max = -1;
+  for (const b of auction) {
+    const r = bidRank(b);
+    if (r > max) max = r;
+  }
+  return max;
+}
+
+// ── Seat utilities ────────────────────────────────────────────────────────────
+const SEATS = ['N','E','S','W'];
+function seatIdx(s) { return SEATS.indexOf(s); }
+function partnerOf(s) { return {N:'S',S:'N',E:'W',W:'E'}[s]; }
+function isOpponent(bidSeat, playerSeat) {
+  return bidSeat !== playerSeat && bidSeat !== partnerOf(playerSeat);
+}
+function seatAtIdx(dealer, i) {
+  return SEATS[(seatIdx(dealer) + i) % 4];
+}
+
+function canDouble(auction, dealer, playerSeat) {
+  for (let i = auction.length - 1; i >= 0; i--) {
+    const b = auction[i];
+    if (b === 'P') continue;
+    if (b === 'X' || b === 'XX') return false;
+    return isOpponent(seatAtIdx(dealer, i), playerSeat);
+  }
+  return false;
+}
+
+function canRedouble(auction, dealer, playerSeat) {
+  for (let i = auction.length - 1; i >= 0; i--) {
+    const b = auction[i];
+    if (b === 'P') continue;
+    if (b !== 'X') return false;
+    return isOpponent(seatAtIdx(dealer, i), playerSeat);
+  }
+  return false;
+}
+
+// ── HCP counter ───────────────────────────────────────────────────────────────
+function countHCP(hand) {
+  const pts = {A:4,K:3,Q:2,J:1};
+  let total = 0;
+  for (const suit of ['S','H','D','C']) {
+    for (const card of (hand[suit] || '')) {
+      total += pts[card] || 0;
+    }
+  }
+  return total;
+}
+
+// ── 100 SAYC Scenarios ────────────────────────────────────────────────────────
+// hand: {S:'AK5', H:'Q93', D:'KJ72', C:'Q84'}  (ranks A K Q J T 9 ... 2)
+// dlr: dealer seat, seat: player seat
+// vul: 'none'|'NS'|'EW'|'both'
+// auction: bids in rotation from dealer, before player's turn
+// ok: array of acceptable bids
+// why: explanation shown after bidding
+
+const SCENARIOS = [
+// ── OPENING BIDS (1-25) ─────────────────────────────────────────────────────
+{id:1, cat:'Opening Bids',
+ hand:{S:'AQ5',H:'KJ3',D:'KJ52',C:'Q84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1N'],
+ why:'16 HCP, balanced 4-3-3-3 with no 5-card major. Open 1NT, precisely describing 15–17 HCP balanced.'},
+
+{id:2, cat:'Opening Bids',
+ hand:{S:'KQ5',H:'AJ3',D:'Q752',C:'K84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1N'],
+ why:'15 HCP, balanced 3-3-4-3. No 5-card major, one doubleton is fine for 1NT. Open 1NT.'},
+
+{id:3, cat:'Opening Bids',
+ hand:{S:'AJ54',H:'KQ3',D:'Q72',C:'AJ9'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1N'],
+ why:'17 HCP, balanced 4-3-3-3. Top of the 1NT range — still correct to open 1NT. A rebid of 1NT would undercount; 2NT would overcount.'},
+
+{id:4, cat:'Opening Bids',
+ hand:{S:'K54',H:'Q93',D:'Q752',C:'K84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['P'],
+ why:'10 HCP — below the SAYC minimum of 12 HCP to open. Pass and wait for a better hand.'},
+
+{id:5, cat:'Opening Bids',
+ hand:{S:'Q54',H:'J93',D:'KJ52',C:'Q84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['P'],
+ why:'9 HCP with no shape advantage. Pass. Opening light invites trouble and rarely gains.'},
+
+{id:6, cat:'Opening Bids',
+ hand:{S:'KQJ95',H:'A43',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'13 HCP with a 5-card spade suit. SAYC requires 5 cards to open a major. Open 1♠.'},
+
+{id:7, cat:'Opening Bids',
+ hand:{S:'A43',H:'KJ975',D:'Q72',C:'K4'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1H'],
+ why:'13 HCP with a 5-card heart suit. Open 1♥. Never open 1NT when you have a 5-card major in the 12–17 HCP range.'},
+
+{id:8, cat:'Opening Bids',
+ hand:{S:'AKJ95',H:'AQ4',D:'A72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'18 HCP with a 5-card spade suit. Open 1♠ and plan a strong rebid (jump shift or reverse) to show extra values.'},
+
+{id:9, cat:'Opening Bids',
+ hand:{S:'KQJ5',H:'AKJ95',D:'3',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1H'],
+ why:'15 HCP with 5 hearts and 4 spades. Open your longest suit: 1♥. Next round bid 1♠ to show the second suit.'},
+
+{id:10, cat:'Opening Bids',
+ hand:{S:'AKJ95',H:'KQJ5',D:'3',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'15 HCP with 5 spades and 4 hearts. With 5-4, open the 5-card suit (1♠). You\'ll bid hearts next round.'},
+
+{id:11, cat:'Opening Bids',
+ hand:{S:'KJ5',H:'A32',D:'Q974',C:'KJ4'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1D','1C'],
+ why:'14 HCP with no 5-card suit and no 5-card major. With 4 diamonds and 4 clubs, open 1♦ to keep the bidding lower and show diamonds specifically.'},
+
+{id:12, cat:'Opening Bids',
+ hand:{S:'K54',H:'A3',D:'KJ975',C:'Q84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1D'],
+ why:'13 HCP with a 5-card diamond suit. Open 1♦. No 5-card major, so a minor-suit opening is correct.'},
+
+{id:13, cat:'Opening Bids',
+ hand:{S:'A54',H:'K32',D:'Q72',C:'KJ98'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1C'],
+ why:'13 HCP with a 5-card club suit. Open 1♣ — your longest suit.'},
+
+{id:14, cat:'Opening Bids',
+ hand:{S:'KQJ975',H:'43',D:'A72',C:'65'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2S'],
+ why:'10 HCP with a strong 6-card spade suit. A weak two bid (2♠) shows 6–10 HCP and a good 6-card suit, making life hard for opponents.'},
+
+{id:15, cat:'Opening Bids',
+ hand:{S:'A3',H:'KQJ975',D:'72',C:'654'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2H'],
+ why:'10 HCP with six solid hearts. Open 2♥ (weak two). The AKQ heart suit is exactly the texture SAYC weak twos are designed for.'},
+
+{id:16, cat:'Opening Bids',
+ hand:{S:'54',H:'A3',D:'KQJ975',C:'654'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2D'],
+ why:'10 HCP, 6-card diamond suit. Open 2♦ as a weak two, showing 6–10 HCP and length in diamonds.'},
+
+{id:17, cat:'Opening Bids',
+ hand:{S:'KQJ9754',H:'43',D:'82',C:'65'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['3S','4S'],
+ why:'6 HCP with a 7-card spade suit. Open at the 3 or 4 level (preemptive). Nonvulnerable, 3♠ is standard; some players jump to 4♠ with 7-card suits and a hand this shapely.'},
+
+{id:18, cat:'Opening Bids',
+ hand:{S:'43',H:'KQJ9875',D:'72',C:'65'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['3H','4H'],
+ why:'6 HCP, 8-card heart suit. Open 3♥ or 4♥ preemptively. With 8 cards, 4♥ is perfectly sound nonvulnerable.'},
+
+{id:19, cat:'Opening Bids',
+ hand:{S:'AKQJ',H:'AKQ',D:'AK5',C:'432'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2C'],
+ why:'26 HCP — far too strong for a one-level opening. Open 2♣ (artificial, strong, and forcing to game). This is the SAYC way to show 22+ HCP or a near-game-in-hand.'},
+
+{id:20, cat:'Opening Bids',
+ hand:{S:'AQ5',H:'KQ3',D:'KJ72',C:'AQ4'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2N'],
+ why:'21 HCP, balanced 4-3-3-3. Open 2NT, showing 20–21 HCP. Too strong for 1NT (15–17), not quite strong enough for 2♣ (22+).'},
+
+{id:21, cat:'Opening Bids',
+ hand:{S:'AJ5',H:'KQ3',D:'KJ72',C:'AQ4'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2N'],
+ why:'20 HCP, balanced. Same logic: open 2NT to pinpoint 20–21 HCP exactly.'},
+
+{id:22, cat:'Opening Bids',
+ hand:{S:'KQJ975',H:'AKJ',D:'K4',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'17 HCP with a 6-card spade suit. Open 1♠. With 17 HCP you\'re at the top of the 1-level opener range — rebid 3♠ (jump) to show the 6-card suit and extra values.'},
+
+{id:23, cat:'Opening Bids',
+ hand:{S:'AKJ95',H:'AQ4',D:'A72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'18 HCP with 5 spades. Open 1♠ and plan a strong rebid. Not 2♣ (which needs 22+). Show the extra strength via your rebid.'},
+
+{id:24, cat:'Opening Bids',
+ hand:{S:'KQJ975',H:'A43',D:'K7',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1S'],
+ why:'13 HCP with 6 spades — too strong for a weak two (need 6–10 HCP). Open 1♠, planning to rebid 2♠ to show the 6-card suit.'},
+
+{id:25, cat:'Opening Bids',
+ hand:{S:'AJ54',H:'KQ54',D:'A93',C:'75'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['1D'],
+ why:'14 HCP, 4-4 in the majors with 3 diamonds and 2 clubs. Open 1♦ — you open the longer minor. With 4-4 majors you need a natural minor-suit opening so partner can respond up the line to find the major fit.'},
+
+// ── RESPONSES TO 1NT (26-45) ────────────────────────────────────────────────
+{id:26, cat:'Responses to 1NT',
+ hand:{S:'J954',H:'Q83',D:'752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['P'],
+ why:'5 HCP. Game needs about 25–26 HCP; your maximum contribution puts you at 22. Pass 1NT and take the safe plus score.'},
+
+{id:27, cat:'Responses to 1NT',
+ hand:{S:'K954',H:'Q83',D:'752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['P'],
+ why:'7 HCP. Still shy of the 8–9 HCP invite range. Pass 1NT — you could land at a hopeless 3NT if you invite with a minimum.'},
+
+{id:28, cat:'Responses to 1NT',
+ hand:{S:'KJ54',H:'A93',D:'Q75',C:'842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2C'],
+ why:'10 HCP with 4 spades. Use Stayman (2♣) to ask partner for a 4-card major. If partner bids 2♠, raise to 4♠. If partner denies (2♦ or 2♥ without hearts), bid 3NT.'},
+
+{id:29, cat:'Responses to 1NT',
+ hand:{S:'KJ75',H:'AQ54',D:'J72',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2C'],
+ why:'11 HCP with 4 spades and 4 hearts. Stayman (2♣) finds either 4-4 major fit. If partner bids 2♥ or 2♠, raise to game. If 2♦, bid 3NT.'},
+
+{id:30, cat:'Responses to 1NT',
+ hand:{S:'54',H:'KQJ95',D:'Q75',C:'842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2D'],
+ why:'8 HCP with 5 hearts. Use a Jacoby transfer (2♦) to force partner to bid 2♥. With your values (combined 23–25 HCP), pass the 2♥ — 5-3 heart fits play better than 1NT.'},
+
+{id:31, cat:'Responses to 1NT',
+ hand:{S:'AJ975',H:'43',D:'Q75',C:'K42'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2H'],
+ why:'10 HCP with 5 spades. Jacoby transfer: bid 2♥ to force partner to bid 2♠. With 10 HCP (25–27 combined), raise to 4♠ after the transfer completes.'},
+
+{id:32, cat:'Responses to 1NT',
+ hand:{S:'54',H:'KJ9875',D:'Q72',C:'K4'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2D'],
+ why:'9 HCP with 6 hearts. Transfer to 2♥ with 2♦. After partner\'s 2♥, rebid 3♥ to invite game with the 6-card suit, or jump to 4♥ if you feel comfortable (24–26 combined is close).'},
+
+{id:33, cat:'Responses to 1NT',
+ hand:{S:'KQJ95',H:'A43',D:'Q72',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2H'],
+ why:'12 HCP with 5 spades. Transfer to 2♠ with 2♥. After partner bids 2♠, jump to 4♠ — combined 27–29 HCP is solidly in game range.'},
+
+{id:34, cat:'Responses to 1NT',
+ hand:{S:'J54',H:'K93',D:'J752',C:'KJ4'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2N'],
+ why:'9 HCP, balanced. Bid 2NT to invite. With a minimum (15 HCP), partner passes. With 16–17, partner bids 3NT.'},
+
+{id:35, cat:'Responses to 1NT',
+ hand:{S:'KJ5',H:'K93',D:'AQ52',C:'J84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['3N'],
+ why:'14 HCP, balanced, no 4-card major. Bid 3NT directly — you know game is correct, and NT is the right strain.'},
+
+{id:36, cat:'Responses to 1NT',
+ hand:{S:'Q5',H:'KJ3',D:'KQ852',C:'J84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['3N'],
+ why:'13 HCP with a 5-card diamond suit but an otherwise balanced hand. Bid 3NT — the diamond suit is a source of tricks in NT, and 3NT rates to be easier than 5♦.'},
+
+{id:37, cat:'Responses to 1NT',
+ hand:{S:'754',H:'KJ75',D:'AQ3',C:'J84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2C'],
+ why:'11 HCP with 4 hearts and no spade suit. Use Stayman. If partner bids 2♥, raise to 4♥. If partner denies hearts (2♦ or 2♠), bid 3NT.'},
+
+{id:38, cat:'Responses to 1NT',
+ hand:{S:'84',H:'QJ9875',D:'Q75',C:'42'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2D'],
+ why:'5 HCP with a 6-card heart suit. Transfer to 2♥ with 2♦, then pass. You\'d much rather play in hearts than watch declarer flounder in 1NT with this hand.'},
+
+{id:39, cat:'Responses to 1NT',
+ hand:{S:'KJ5',H:'AJ4',D:'KJ7',C:'QJ5'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['4N'],
+ why:'16 HCP, balanced. Bid 4NT — quantitative, not Blackwood. This says: "Partner, with a maximum (17 HCP), bid 6NT; with a minimum (15–16), pass." Combined 31–33 HCP is right in the small slam zone.'},
+
+{id:40, cat:'Responses to 1NT',
+ hand:{S:'AJ754',H:'KQ54',D:'J2',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2C'],
+ why:'11 HCP with 5 spades and 4 hearts. Use Stayman. If partner bids 2♥ → raise to 4♥. If 2♠ → raise to 4♠. If 2♦ → bid 2♠, showing 5 spades and game values.'},
+
+{id:41, cat:'Responses to 1NT',
+ hand:{S:'84',H:'AQ975',D:'K7',C:'J975'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2D'],
+ why:'10 HCP with 5 hearts. Transfer to 2♥ with 2♦. After partner accepts, raise to 4♥ — game is clear with the major-suit fit.'},
+
+{id:42, cat:'Responses to 1NT',
+ hand:{S:'KQJ95',H:'A4',D:'Q752',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2H'],
+ why:'12 HCP with 5 spades. Transfer to 2♠ with 2♥. After partner bids 2♠, bid 4♠ to place the contract.'},
+
+{id:43, cat:'Responses to 1NT',
+ hand:{S:'KJ75',H:'Q954',D:'AQ2',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2C'],
+ why:'12 HCP with 4-4 in the majors. Stayman. If partner has a 4-card major, play in the 4-4 fit. If not, 3NT.'},
+
+{id:44, cat:'Responses to 1NT',
+ hand:{S:'84',H:'K5',D:'Q72',C:'AKJ875'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['3C'],
+ why:'13 HCP with a strong 6-card club suit. Bid 3♣ — natural and game-forcing in SAYC. You\'re describing a hand that wants to play in clubs at game (or explore slam).'},
+
+{id:45, cat:'Responses to 1NT',
+ hand:{S:'AKJ95',H:'84',D:'KQ752',C:'4'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['2H'],
+ why:'14 HCP with 5 spades and 5 diamonds. Transfer to 2♠ first with 2♥. After partner bids 2♠, bid 3♦ to show the second suit — letting partner choose the best game (4♠, 3NT, or rarely 5♦).'},
+
+// ── RESPONSES TO 1 MAJOR (46-60) ────────────────────────────────────────────
+{id:46, cat:'Responses to 1♥',
+ hand:{S:'Q54',H:'J93',D:'K752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['2H'],
+ why:'8 HCP with 3-card heart support. A single raise (2♥) shows 3+ hearts and 6–9 HCP — a constructive but non-forcing raise.'},
+
+{id:47, cat:'Responses to 1♥',
+ hand:{S:'K54',H:'Q93',D:'AJ52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['3H'],
+ why:'11 HCP with 3-card heart support. Jump raise to 3♥ — the limit raise in SAYC. This shows 10–12 HCP and 3+ card support. Invitational, not forcing.'},
+
+{id:48, cat:'Responses to 1♥',
+ hand:{S:'54',H:'Q9753',D:'752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['4H'],
+ why:'5 HCP with 5-card heart support. Jump to 4♥ — the preemptive raise. Shows 4+ card support and weak values. Makes it tough for opponents to enter.'},
+
+{id:49, cat:'Responses to 1♥',
+ hand:{S:'K54',H:'93',D:'KJ52',C:'Q842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['1N'],
+ why:'9 HCP, no heart support, balanced. Bid 1NT, showing 6–9 HCP and denying 3-card heart support (or a biddable suit at the 1 level).'},
+
+{id:50, cat:'Responses to 1♥',
+ hand:{S:'KJ54',H:'93',D:'K752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['1S'],
+ why:'9 HCP with 4 spades. Bid 1♠ — a new suit at the 1 level, showing 4+ spades. This is forcing for one round. Finding a 4-4 spade fit is better than a 3-card heart raise.'},
+
+{id:51, cat:'Responses to 1♥',
+ hand:{S:'K4',H:'93',D:'KJ52',C:'AJ842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['2C'],
+ why:'12 HCP with 5 clubs. A new suit at the 2 level is game-forcing in SAYC. Bid 2♣ to start describing your hand.'},
+
+{id:52, cat:'Responses to 1♥',
+ hand:{S:'AQ4',H:'K93',D:'KJ52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['3N','2D','2C'],
+ why:'14 HCP with 3-card heart support. 3NT is one option (describing balanced game values). Alternatively, start with 2♦ or 2♣ (game-forcing) and support hearts next. All three tell a coherent story.'},
+
+{id:53, cat:'Responses to 1♠',
+ hand:{S:'Q93',H:'K54',D:'K752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['2S'],
+ why:'9 HCP with 3-card spade support. Simple raise to 2♠, showing 3+ spades and 6–9 HCP.'},
+
+{id:54, cat:'Responses to 1♠',
+ hand:{S:'KJ4',H:'Q54',D:'AJ52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['3S'],
+ why:'12 HCP with 3-card spade support. Jump raise to 3♠ — the limit raise, inviting game. Shows 10–12 HCP and 3+ card support.'},
+
+{id:55, cat:'Responses to 1♠',
+ hand:{S:'54',H:'K93',D:'K752',C:'Q842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['1N'],
+ why:'8 HCP with no spade fit. Bid 1NT — the catch-all response showing 6–9 HCP without support or a biddable suit.'},
+
+{id:56, cat:'Responses to 1♠',
+ hand:{S:'K4',H:'AQJ95',D:'K52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['2H'],
+ why:'14 HCP with 5 hearts. A 2-level new suit response is game-forcing. Bid 2♥ to show the 5-card heart suit. Partner can support hearts, rebid spades, or bid NT — game is assured.'},
+
+{id:57, cat:'Responses to 1♠',
+ hand:{S:'54',H:'K93',D:'AQJ52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['2D'],
+ why:'11 HCP with 5 diamonds. Bid 2♦ — game-forcing new suit. Describes your diamond length and values.'},
+
+{id:58, cat:'Responses to 1♠',
+ hand:{S:'K9754',H:'A3',D:'K752',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['4S','3S'],
+ why:'10 HCP with 5-card spade support. With a known 10+ card fit, game is likely. Jump to 4♠ directly (game values + support), or 3♠ (limit raise) if you\'re more cautious. The fit and shape favor 4♠.'},
+
+{id:59, cat:'Responses to 1♥',
+ hand:{S:'AJ4',H:'Q93',D:'K752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','P'],
+ ok:['3N','2D','2C'],
+ why:'12 HCP with 3-card heart support. You can raise (via 2♦ or 2♣ then hearts) or blast 3NT. All are reasonable game-forcing actions with balanced shape.'},
+
+{id:60, cat:'Responses to 1♠',
+ hand:{S:'84',H:'AKQ95',D:'K52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['2H'],
+ why:'14 HCP, 5 solid hearts, no spade fit. Bid 2♥ — game-forcing. The heart suit needs to be heard, and your values are game-going.'},
+
+// ── RESPONSES TO 1 MINOR (61-70) ────────────────────────────────────────────
+{id:61, cat:'Responses to 1♣',
+ hand:{S:'K754',H:'AJ52',D:'Q75',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['1H'],
+ why:'10 HCP with 4 hearts and 4 spades. Bid the lower-ranking 4-card major first (1♥). This is "up the line" — it lets partner bid 1♠ if they have 4 spades, finding the fit.'},
+
+{id:62, cat:'Responses to 1♣',
+ hand:{S:'KJ75',H:'Q3',D:'A752',C:'842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['1S'],
+ why:'10 HCP with 4 spades, no 4-card heart suit. Respond 1♠ — showing 4+ spades and denying 4 hearts (since you didn\'t bid 1♥).'},
+
+{id:63, cat:'Responses to 1♣',
+ hand:{S:'K54',H:'Q93',D:'KJ52',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['1N'],
+ why:'9 HCP, balanced, no 4-card major. Bid 1NT — showing 6–9 HCP with no major. Accurate and descriptive.'},
+
+{id:64, cat:'Responses to 1♣',
+ hand:{S:'KJ4',H:'AQ3',D:'K752',C:'Q84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['2N'],
+ why:'14 HCP, balanced, no 4-card major. Bid 2NT — showing 13–15 HCP, balanced, no major. Invites game if partner has extras.'},
+
+{id:65, cat:'Responses to 1♣',
+ hand:{S:'KJ4',H:'AQ3',D:'KQ52',C:'J84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['3N'],
+ why:'15 HCP, balanced. Bid 3NT directly — you know game is on and 3NT is the right spot.'},
+
+{id:66, cat:'Responses to 1♦',
+ hand:{S:'K754',H:'AJ52',D:'Q5',C:'842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1D','P'],
+ ok:['1H'],
+ why:'9 HCP with 4 hearts and 4 spades over a 1♦ opening. Bid 1♥ (up the line), letting partner show 4 spades at the 1 level.'},
+
+{id:67, cat:'Responses to 1♦',
+ hand:{S:'AJ75',H:'Q3',D:'752',C:'K842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1D','P'],
+ ok:['1S'],
+ why:'9 HCP, 4 spades, no 4-card heart suit. Bid 1♠ — the natural response showing the major.'},
+
+{id:68, cat:'Responses to 1♦',
+ hand:{S:'Q4',H:'K93',D:'KQ952',C:'J84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1D','P'],
+ ok:['2D','3D'],
+ why:'9 HCP with 5-card diamond support. Raise to 2♦ (constructive, 6–9 HCP) or 3♦ (invitational, 10–12 HCP) depending on your count. Both are reasonable descriptions of this hand with good fit.'},
+
+{id:69, cat:'Responses to 1♣',
+ hand:{S:'Q4',H:'K93',D:'J84',C:'KQ952'},
+ dlr:'N',seat:'S',vul:'none',auction:['1C','P'],
+ ok:['2C','3C'],
+ why:'9 HCP with 5 clubs. Raise to 2♣ (6–9 HCP) or 3♣ (limit raise, 10–12). With 9 HCP and good shape, 3♣ is a reasonable stretch showing the fit and values.'},
+
+{id:70, cat:'Responses to 1♦',
+ hand:{S:'K4',H:'AJ952',D:'Q7',C:'K842'},
+ dlr:'N',seat:'S',vul:'none',auction:['1D','P'],
+ ok:['1H'],
+ why:'12 HCP with 5 hearts. Bid 1♥ — showing 5+ hearts, forcing for one round. With game values you\'ll show more next round.'},
+
+// ── OPENER\'S REBID (71-85) ──────────────────────────────────────────────────
+{id:71, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'A43',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','2S','P'],
+ ok:['P'],
+ why:'13 HCP. Partner raised to 2♠ (6–9 HCP). Maximum combined = 22 HCP — not enough for game (needs ~25). Pass and take the 8-trick part score.'},
+
+{id:72, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'AQ4',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','2S','P'],
+ ok:['3S','4S'],
+ why:'15 HCP. Partner has 6–9 HCP, so range is 21–24. With a maximum 15, 4♠ is aggressive but reasonable. 3♠ is the safe invite. Either tell the right story.'},
+
+{id:73, cat:"Opener's Rebid",
+ hand:{S:'AKJ95',H:'AQ4',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','3S','P'],
+ ok:['4S'],
+ why:'17 HCP. Partner limited raised to 3♠ (10–12 HCP). Combined = 27–29 HCP — accept the invite and bid 4♠.'},
+
+{id:74, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'A43',D:'AK2',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','1N','P'],
+ ok:['2N','2S'],
+ why:'16 HCP. Partner bid 1NT (6–9 HCP, no support). With 16 HCP, you can invite with 2NT (showing 18–19, which this isn\'t quite) — or rebid 2♠ to show a 5-card suit. 2♠ is the more accurate description here.'},
+
+{id:75, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'A43',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','1N','P'],
+ ok:['P','2S'],
+ why:'13 HCP. Partner bid 1NT showing 6–9. Maximum 22 HCP combined. Pass (respecting 1NT as a safe spot) or rebid 2♠ to offer the suit contract. Either is reasonable.'},
+
+{id:76, cat:"Opener's Rebid",
+ hand:{S:'KQJ5',H:'AKJ95',D:'3',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1H','P','1S','P'],
+ ok:['4S','3S'],
+ why:'15 HCP. You opened 1♥, partner bid 1♠ (4+ spades). You have 4 spades — a fit! With 15 HCP, raise to 3♠ (invite) or 4♠ (game — aggressive but fine). The fit and shape favor the direct game.'},
+
+{id:77, cat:"Opener's Rebid",
+ hand:{S:'KQ5',H:'AKJ95',D:'K4',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1H','P','1S','P'],
+ ok:['2S'],
+ why:'15 HCP. Partner bid 1♠, you have 3-card spade support. Raise to 2♠ — you\'ve found the fit. A direct 4♠ would be aggressive; 2♠ gives partner room to show more.'},
+
+{id:78, cat:"Opener's Rebid",
+ hand:{S:'A43',H:'KQJ95',D:'K4',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1H','P','1S','P'],
+ ok:['2H'],
+ why:'13 HCP. No spade fit (3 spades would warrant a raise, but here we have only 3 — borderline). Without extra strength, rebid 2♥ to show a minimum opener with 5+ hearts.'},
+
+{id:79, cat:"Opener's Rebid",
+ hand:{S:'AJ52',H:'K4',D:'AQ752',C:'J8'},
+ dlr:'S',seat:'S',vul:'none',auction:['1D','P','1H','P'],
+ ok:['1S'],
+ why:'13 HCP. You have 4 spades — show them at the 1 level. Bidding 1♠ now shows 4 spades and 4+ diamonds without overstating your strength.'},
+
+{id:80, cat:"Opener's Rebid",
+ hand:{S:'K4',H:'AKJ95',D:'AQ4',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1H','P','2H','P'],
+ ok:['4H'],
+ why:'17 HCP. Partner raised to 2♥ (6–9 HCP). With 17, combined is 23–26. The top of that range makes 4♥ clear. Bid it.'},
+
+{id:81, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'A4',D:'K752',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','2C','P'],
+ ok:['2S'],
+ why:'12 HCP. Partner\'s 2♣ is game-forcing. With a minimum opener and 5-card spade suit, rebid 2♠ to show the suit and minimum values. This is the most accurate first rebid.'},
+
+{id:82, cat:"Opener's Rebid",
+ hand:{S:'AKJ95',H:'AQ4',D:'K72',C:'84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','2D','P'],
+ ok:['2N','3S'],
+ why:'18 HCP. Partner\'s 2♦ is game-forcing. With 18 HCP and balanced extras, rebid 2NT (showing 18–19 balanced) or 3♠ to show the strong 5-card suit. Both describe maximum openers.'},
+
+{id:83, cat:"Opener's Rebid",
+ hand:{S:'A4',H:'KQJ95',D:'K72',C:'J84'},
+ dlr:'S',seat:'S',vul:'none',auction:['1H','P','2D','P'],
+ ok:['2H'],
+ why:'13 HCP. Partner\'s 2♦ is game-forcing. With a minimum, rebid 2♥ to show 5+ hearts and deny extras. Game is forced, so you\'ll continue describing your hand.'},
+
+{id:84, cat:"Opener's Rebid",
+ hand:{S:'AJ54',H:'K4',D:'Q952',C:'AJ8'},
+ dlr:'S',seat:'S',vul:'none',auction:['2N','P','3C','P'],
+ ok:['3S'],
+ why:'You opened 2NT (20–21 HCP). Partner bid 3♣ (Stayman), asking for a 4-card major. You have 4 spades — bid 3♠ to show them.'},
+
+{id:85, cat:"Opener's Rebid",
+ hand:{S:'KQJ95',H:'AQ4',D:'K72',C:'J4'},
+ dlr:'S',seat:'S',vul:'none',auction:['1S','P','3S','P'],
+ ok:['4S'],
+ why:'15 HCP. Partner\'s limit raise (3♠) shows 10–12 HCP. Combined 25–27 HCP — accept the invite. Bid 4♠.'},
+
+// ── COMPETITIVE BIDDING (86-95) ─────────────────────────────────────────────
+{id:86, cat:'Competitive Bidding',
+ hand:{S:'KQJ95',H:'A43',D:'K72',C:'84'},
+ dlr:'E',seat:'S',vul:'none',auction:['1H',''],
+ ok:['1S'],
+ why:'13 HCP and a good 5-card spade suit over a 1♥ opening. Overcall 1♠. SAYC requires a good 5-card suit (ideally with 2 of the top 3 honors) and 9–17 HCP for a 1-level overcall.'},
+
+{id:87, cat:'Competitive Bidding',
+ hand:{S:'KQ54',H:'5',D:'AJ52',C:'KQ84'},
+ dlr:'E',seat:'S',vul:'none',auction:['1H',''],
+ ok:['X'],
+ why:'14 HCP with shortage in hearts and support for all other suits. This is a textbook takeout double. Double says "partner, pick your suit." Shows 12+ HCP with support for unbid suits.'},
+
+{id:88, cat:'Competitive Bidding',
+ hand:{S:'KJ5',H:'AQ3',D:'KJ72',C:'Q84'},
+ dlr:'E',seat:'S',vul:'none',auction:['1H',''],
+ ok:['1N'],
+ why:'16 HCP, balanced, and a stopper in the opponent\'s suit (♥AQ3). Overcall 1NT, showing 15–18 HCP, balanced, with a heart stopper. More precise than a takeout double here.'},
+
+{id:89, cat:'Competitive Bidding',
+ hand:{S:'J954',H:'Q3',D:'K752',C:'Q84'},
+ dlr:'W',seat:'S',vul:'none',auction:['1H','X','P'],
+ ok:['1S'],
+ why:'7 HCP. Partner doubled for takeout — you MUST bid something (not Pass unless you want to defend). With 4 spades, bid 1♠. Even with nothing, respond to partner\'s double.'},
+
+{id:90, cat:'Competitive Bidding',
+ hand:{S:'KQ54',H:'4',D:'AJ52',C:'KQ84'},
+ dlr:'W',seat:'S',vul:'none',auction:['2H',''],
+ ok:['X'],
+ why:'15 HCP, singleton heart, support for all other suits. Double a weak two the same way you would a one-bid: for takeout. Shows 13+ HCP with support for unbid suits.'},
+
+{id:91, cat:'Competitive Bidding',
+ hand:{S:'AQJ95',H:'K43',D:'K72',C:'84'},
+ dlr:'E',seat:'S',vul:'none',auction:['1D',''],
+ ok:['1S'],
+ why:'13 HCP with a strong 5-card spade suit. Overcall 1♠ over 1♦. Simple and accurate — shows your suit and gets it in the picture early.'},
+
+{id:92, cat:'Competitive Bidding',
+ hand:{S:'K4',H:'KQ93',D:'Q752',C:'J84'},
+ dlr:'W',seat:'S',vul:'NS',auction:['1S','2H','P'],
+ ok:['3H','4H'],
+ why:'9 HCP with 4-card heart support for partner\'s overcall. With a known fit and vulnerability in your favor (you\'re vulnerable, but the fit justifies pushing). 3♥ (constructive raise) or 4♥ (aggressive with the 4-card fit) both tell the story.'},
+
+{id:93, cat:'Competitive Bidding',
+ hand:{S:'AQJ95',H:'K4',D:'K752',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1H','1S','2H'],
+ ok:['2S','3S','4S'],
+ why:'13 HCP with a strong 5-card spade suit. Partner overcalled 1♠ and RHO rebid 2♥. With this much support and your own values, compete to 2♠, 3♠, or even 4♠. The auction is competitive — don\'t sell out cheaply.'},
+
+{id:94, cat:'Competitive Bidding',
+ hand:{S:'KQ54',H:'3',D:'AQJ52',C:'K84'},
+ dlr:'E',seat:'S',vul:'none',auction:['3H',''],
+ ok:['X'],
+ why:'16 HCP, singleton heart, support for all other suits. Double a preemptive 3♥ for takeout — exactly the same logic as doubling a 1-bid. Shows opening values and support.'},
+
+{id:95, cat:'Competitive Bidding',
+ hand:{S:'84',H:'K93',D:'AQJ52',C:'Q84'},
+ dlr:'W',seat:'S',vul:'EW',auction:['1S','2D','2S'],
+ ok:['3D','P'],
+ why:'10 HCP with diamond support for partner\'s overcall. You can compete to 3♦ — partner showed a suit and you have values. Alternatively, 9 tricks may be a stretch, and passing 2♠ out is safe. Both are defensible.'},
+
+// ── SLAM BIDDING (96-100) ────────────────────────────────────────────────────
+{id:96, cat:'Slam Bidding',
+ hand:{S:'KJ5',H:'AJ4',D:'KJ7',C:'QJ5'},
+ dlr:'N',seat:'S',vul:'none',auction:['1N','P'],
+ ok:['4N'],
+ why:'16 HCP, balanced. Bid 4NT — quantitative, not Blackwood. With 31–33 combined HCP, you\'re right in small-slam territory. A maximum 1NT opener (17 HCP) should accept (6NT); a minimum (15) should pass.'},
+
+{id:97, cat:'Slam Bidding',
+ hand:{S:'KQJ5',H:'AK4',D:'K752',C:'84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P'],
+ ok:['4N'],
+ why:'15 HCP with 4-card spade support. After partner opens 1♠ showing 12–21 HCP, use Blackwood (4NT) to ask for aces. With enough aces you can bid a slam confidently.'},
+
+{id:98, cat:'Slam Bidding',
+ hand:{S:'Q954',H:'A4',D:'K752',C:'K84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P','4S','P','4N','P'],
+ ok:['5H'],
+ why:'You\'re responding to Blackwood (4NT). Count your aces: ♥A = 1 ace. The SAYC response: 5♣ = 0 or 4 aces, 5♦ = 1 ace, 5♥ = 2 aces, 5♠ = 3 aces. Bid 5♥ for 2 aces.'},
+
+{id:99, cat:'Slam Bidding',
+ hand:{S:'J954',H:'Q4',D:'K752',C:'K84'},
+ dlr:'N',seat:'S',vul:'none',auction:['1S','P','4S','P','4N','P'],
+ ok:['5C'],
+ why:'Responding to Blackwood. You have 0 aces (K\'s and Q\'s don\'t count). Bid 5♣ — showing 0 or 4 aces. Partner will know from context you don\'t have all 4.'},
+
+{id:100, cat:'Slam Bidding',
+ hand:{S:'AQ',H:'AKQ',D:'AK5',C:'43'},
+ dlr:'S',seat:'S',vul:'none',auction:[],
+ ok:['2C'],
+ why:'22 HCP with solid values in three suits — a powerful hand. Open 2♣ (strong, artificial, forcing). After partner responds, you can describe this semi-balanced powerhouse and explore the right slam.'},
+];
+
+// ── Game state ─────────────────────────────────────────────────────────────────
+let session = [];
+let currentIdx = 0;
+let score = 0;
+let answered = false;
+let selectedBid = null;
+let results = []; // {scenario, bid, correct}
+
+function initSession() {
+  // Random 10 from 100
+  const pool = [...SCENARIOS].sort(() => Math.random() - 0.5).slice(0, 10);
+  session = pool;
+  currentIdx = 0;
+  score = 0;
+  answered = false;
+  selectedBid = null;
+  results = [];
+
+  document.getElementById('game-area').style.display = 'grid';
+  document.getElementById('screen-gameover').classList.remove('visible');
+
+  renderScenario();
+}
+
+function renderScenario() {
+  const s = session[currentIdx];
+  answered = false;
+  selectedBid = null;
+
+  // Progress
+  const q = currentIdx + 1;
+  document.getElementById('progress-label').textContent = `Question ${q} of 10`;
+  document.getElementById('progress-fill').style.width = `${(currentIdx / 10) * 100}%`;
+  document.getElementById('score-label').textContent = `${score} / ${currentIdx}`;
+
+  // Hide feedback
+  document.getElementById('feedback-idle').style.display = 'block';
+  document.getElementById('feedback-result').classList.remove('visible');
+
+  // Hand
+  renderHand(s.hand);
+
+  // Hand info
+  const hcp = countHCP(s.hand);
+  const dist = ['S','H','D','C'].map(su => (s.hand[su]||'').length).join('-');
+  const vulText = {none:'None',NS:'N/S',EW:'E/W',both:'Both'}[s.vul];
+  document.getElementById('hand-info').innerHTML =
+    `<strong>HCP:</strong> ${hcp}<br>` +
+    `<strong>Distribution:</strong> ${dist}<br>` +
+    `<strong>You are:</strong> ${s.seat}<br>` +
+    `<strong>Dealer:</strong> ${s.dlr}<br>` +
+    `<strong>Vulnerable:</strong> ${vulText}`;
+
+  // Auction
+  renderAuction(s);
+
+  // Context row
+  document.getElementById('context-row').innerHTML =
+    `<span>Category: <strong>${s.cat}</strong></span>` +
+    `<span>Vulnerability: <strong class="vul-${s.vul}">${vulText}</strong></span>`;
+
+  // Bidding box
+  renderBiddingBox(s);
+}
+
+function renderHand(hand) {
+  const suits = [
+    {sym:'♠', key:'S', cls:'black'},
+    {sym:'♥', key:'H', cls:'red'},
+    {sym:'♦', key:'D', cls:'red'},
+    {sym:'♣', key:'C', cls:'black'},
+  ];
+  const el = document.getElementById('hand-display');
+  el.innerHTML = suits.map(({sym,key,cls}) => {
+    const cards = (hand[key]||'').split('').join(' ') || '—';
+    return `<div class="suit-row">
+      <span class="suit-sym ${cls}">${sym}</span>
+      <span class="suit-cards">${cards}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAuction(s) {
+  const dlrIdx = seatIdx(s.dlr);
+  const allBids = [...s.auction, '?'];
+  const tbody = document.getElementById('auction-body');
+  tbody.innerHTML = '';
+
+  // Highlight player's column header
+  ['N','E','S','W'].forEach(seat => {
+    const th = document.getElementById(`th-${seat}`);
+    th.className = seat === s.seat ? 'you' : '';
+    th.textContent = seat === s.seat ? `${seat} (You)` : seat;
+  });
+
+  // Build grid
+  const numCells = dlrIdx + allBids.length;
+  const numRows = Math.ceil(numCells / 4);
+  const grid = Array.from({length: numRows}, () => Array(4).fill(null));
+
+  allBids.forEach((bid, i) => {
+    const absIdx = dlrIdx + i;
+    grid[Math.floor(absIdx / 4)][absIdx % 4] = bid;
+  });
+
+  grid.forEach(row => {
+    const tr = document.createElement('tr');
+    row.forEach((cell, colIdx) => {
+      const td = document.createElement('td');
+      const colSeat = SEATS[colIdx];
+      if (cell === null) {
+        td.textContent = '';
+      } else if (cell === '?') {
+        td.className = 'you-cell';
+        td.innerHTML = '<span class="bid-call question">?</span>';
+      } else {
+        const label = bidLabel(cell);
+        const cls = bidClass(cell);
+        td.innerHTML = `<span class="bid-call ${cls}">${label}</span>`;
+      }
+      if (colSeat === s.seat) td.classList.add('you-cell');
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBiddingBox(s) {
+  const highest = highestBid(s.auction);
+  const dbl = canDouble(s.auction, s.dlr, s.seat);
+  const rdbl = canRedouble(s.auction, s.dlr, s.seat);
+
+  // Special bids
+  document.getElementById('bid-P').classList.remove('bid-disabled','bid-selected');
+  const xBtn = document.getElementById('bid-X');
+  const xxBtn = document.getElementById('bid-XX');
+  xBtn.classList.toggle('bid-disabled', !dbl);
+  xxBtn.classList.toggle('bid-disabled', !rdbl);
+  xBtn.classList.remove('bid-selected');
+  xxBtn.classList.remove('bid-selected');
+
+  // Level buttons
+  const container = document.getElementById('bid-levels');
+  container.innerHTML = '';
+
+  for (let lv = 7; lv >= 1; lv--) {
+    const row = document.createElement('div');
+    row.className = 'bid-level';
+    for (const suit of ['C','D','H','S','N']) {
+      const bid = lv + suit;
+      const btn = document.createElement('button');
+      btn.className = 'bid-btn';
+      if (RED_SUITS.has(suit)) btn.classList.add(suit === 'H' ? 'suit-h' : 'suit-d');
+      btn.id = `bid-${bid}`;
+      btn.textContent = bidLabel(bid);
+      const disabled = bidRank(bid) <= highest;
+      if (disabled) btn.classList.add('bid-disabled');
+      btn.onclick = () => selectBid(bid);
+      row.appendChild(btn);
+    }
+    container.appendChild(row);
+  }
+
+  document.getElementById('bid-confirm').textContent = '— no bid selected —';
+  document.getElementById('bid-confirm').classList.remove('has-selection');
+  document.getElementById('btn-submit').disabled = true;
+}
+
+function selectBid(bid) {
+  if (answered) return;
+
+  // Check disabled
+  const s = session[currentIdx];
+  if (bid !== 'P') {
+    if (bid === 'X' && !canDouble(s.auction, s.dlr, s.seat)) return;
+    if (bid === 'XX' && !canRedouble(s.auction, s.dlr, s.seat)) return;
+    if (bid !== 'X' && bid !== 'XX') {
+      const highest = highestBid(s.auction);
+      if (bidRank(bid) <= highest) return;
+    }
+  }
+
+  // Clear previous selection
+  document.querySelectorAll('.bid-btn.bid-selected').forEach(b => b.classList.remove('bid-selected'));
+
+  selectedBid = bid;
+  const btn = document.getElementById(`bid-${bid}`);
+  if (btn) btn.classList.add('bid-selected');
+
+  const label = bidLabel(bid);
+  document.getElementById('bid-confirm').textContent = `Selected: ${label}`;
+  document.getElementById('bid-confirm').classList.add('has-selection');
+  document.getElementById('btn-submit').disabled = false;
+}
+
+function submitBid() {
+  if (!selectedBid || answered) return;
+  answered = true;
+  document.getElementById('btn-submit').disabled = true;
+
+  const s = session[currentIdx];
+  const correct = s.ok.includes(selectedBid);
+  if (correct) score++;
+
+  results.push({scenario: s, bid: selectedBid, correct});
+
+  // Show feedback
+  document.getElementById('feedback-idle').style.display = 'none';
+  const resultEl = document.getElementById('feedback-result');
+  resultEl.classList.add('visible');
+
+  const banner = document.getElementById('verdict-banner');
+  banner.className = 'verdict-banner ' + (correct ? 'correct' : 'wrong');
+  banner.textContent = correct
+    ? `✓ Correct — ${bidLabel(selectedBid)} is the right bid.`
+    : `✗ You bid ${bidLabel(selectedBid)}`;
+
+  document.getElementById('verdict-you').textContent =
+    correct ? '' : `Accepted bid${s.ok.length > 1 ? 's' : ''}: ${s.ok.map(bidLabel).join(', ')}`;
+
+  document.getElementById('verdict-explanation').textContent = s.why;
+  document.getElementById('verdict-accepted').textContent = '';
+
+  // Update score display
+  document.getElementById('score-label').textContent = `${score} / ${currentIdx + 1}`;
+}
+
+function nextQuestion() {
+  currentIdx++;
+  if (currentIdx >= session.length) {
+    showGameOver();
+  } else {
+    renderScenario();
+  }
+}
+
+function showGameOver() {
+  document.getElementById('game-area').style.display = 'none';
+  const go = document.getElementById('screen-gameover');
+  go.classList.add('visible');
+
+  document.getElementById('final-score-display').textContent = `${score} / 10`;
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('progress-label').textContent = 'Session complete';
+  document.getElementById('score-label').textContent = `${score} / 10`;
+
+  const breakdown = document.getElementById('score-breakdown');
+  breakdown.innerHTML = results.map(r => {
+    const cls = r.correct ? 'right-item' : 'wrong-item';
+    const icon = r.correct ? '✓' : '✗';
+    const label = r.scenario.cat + ': ' + r.scenario.why.split('.')[0] + '.';
+    const yourBid = `You bid: ${bidLabel(r.bid)}`;
+    const accepted = `Accepted: ${r.scenario.ok.map(bidLabel).join(', ')}`;
+    return `<div class="${cls}" style="margin-bottom:0.75rem">
+      ${icon} Q${r.scenario.id} — ${yourBid} | ${accepted}<br>
+      <span style="color:var(--muted);font-size:0.72rem">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+initSession();
+</script>
+</body>
+</html>

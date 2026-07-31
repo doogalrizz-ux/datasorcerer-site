@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jeopardy Trainer — datasorcerer.net</title>
+  <style>
+    /* ── Reset & Base ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #060818;
+      --surface:  #0d1225;
+      --blue:     #0a1f6e;
+      --blue-mid: #1a3aaa;
+      --gold:     #d4a017;
+      --gold-lt:  #f5c842;
+      --text:     #eef0f8;
+      --muted:    #7a8099;
+      --correct:  #2ecc71;
+      --wrong:    #e74c3c;
+      --neutral:  #7f8c8d;
+      --border:   #1e2a50;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      width: 100%;
+      background: var(--blue);
+      border-bottom: 3px solid var(--gold);
+      padding: 1rem 1.5rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--gold-lt);
+      font-family: 'Georgia', serif;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 20px rgba(212,160,23,0.4);
+    }
+
+    header p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      font-family: monospace;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Main wrapper ───────────────────────────────── */
+    main {
+      width: 100%;
+      max-width: 760px;
+      padding: 2rem 1rem;
+      flex: 1;
+    }
+
+    /* ── Screen visibility ──────────────────────────── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Start Screen ───────────────────────────────── */
+    #screen-start {
+      text-align: center;
+      padding-top: 3rem;
+    }
+
+    #screen-start h2 {
+      font-size: 2rem;
+      color: var(--gold-lt);
+      margin-bottom: 0.5rem;
+    }
+
+    #screen-start p {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .start-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .start-form input {
+      width: 100%;
+      max-width: 340px;
+      padding: 0.85rem 1.2rem;
+      font-size: 1.1rem;
+      font-family: 'Georgia', serif;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .start-form input:focus { border-color: var(--gold); }
+    .start-form input::placeholder { color: var(--muted); }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-family: 'Georgia', serif;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      font-weight: bold;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+    }
+
+    .btn-gold:hover:not(:disabled) { background: var(--gold-lt); }
+
+    .btn-correct {
+      background: var(--correct);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-wrong {
+      background: var(--wrong);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-skip {
+      background: var(--neutral);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-correct:hover { opacity: 0.88; }
+    .btn-wrong:hover   { opacity: 0.88; }
+    .btn-skip:hover    { opacity: 0.88; }
+
+    /* ── Game progress bar ───────────────────────────── */
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    /* ── Score & meta row ────────────────────────────── */
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .meta-row .score-display {
+      font-size: 1.1rem;
+      color: var(--gold-lt);
+      font-weight: bold;
+    }
+
+    .score-display.negative { color: var(--wrong); }
+
+    /* ── Question cards ──────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Top card: Category / Value / Date */
+    .card-top {
+      background: var(--blue);
+      border-color: var(--blue-mid);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-category {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--gold-lt);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-meta {
+      text-align: right;
+      font-family: monospace;
+    }
+
+    .card-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--gold-lt);
+    }
+
+    .card-date {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.45);
+      margin-top: 0.1rem;
+    }
+
+    /* Middle card: Question / Clue */
+    .card-clue {
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      line-height: 1.55;
+      text-align: center;
+      color: var(--text);
+    }
+
+    /* Bottom card: Answer */
+    .card-answer {
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .answer-text {
+      font-style: italic;
+      color: var(--gold-lt);
+      font-size: 1.2rem;
+    }
+
+    /* Countdown overlay */
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 2.5rem;
+      color: var(--muted);
+      transition: opacity 0.3s;
+    }
+
+    .countdown-overlay.hidden { display: none; }
+
+    /* ── Answer buttons ──────────────────────────────── */
+    .answer-buttons {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .answer-buttons.hidden { visibility: hidden; }
+
+    /* ── Round banner ────────────────────────────────── */
+    .round-banner {
+      text-align: center;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background: var(--blue);
+      border: 2px solid var(--gold);
+      border-radius: 6px;
+    }
+
+    .round-banner h2 {
+      font-size: 1.6rem;
+      color: var(--gold-lt);
+    }
+
+    .round-banner p {
+      color: rgba(255,255,255,0.6);
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .round-banner .btn { margin-top: 1rem; }
+
+    /* ── Final Jeopardy ──────────────────────────────── */
+    #screen-final { text-align: center; }
+
+    .fj-wager-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .fj-wager-form input {
+      width: 220px;
+      padding: 0.85rem 1.2rem;
+      font-size: 1.3rem;
+      font-family: monospace;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      color: var(--gold-lt);
+      text-align: center;
+      outline: none;
+    }
+
+    .fj-wager-form input:focus { border-color: var(--gold); }
+
+    .fj-score-note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* Countdown clock for FJ */
+    .fj-clock {
+      font-family: monospace;
+      font-size: 3rem;
+      color: var(--gold);
+      text-align: center;
+      margin: 1rem 0;
+      transition: color 0.3s;
+    }
+
+    .fj-clock.urgent { color: var(--wrong); }
+
+    /* ── Game Over Screen ────────────────────────────── */
+    #screen-gameover { text-align: center; }
+
+    #screen-gameover h2 {
+      font-size: 2rem;
+      color: var(--gold-lt);
+      margin-bottom: 0.5rem;
+    }
+
+    .final-score {
+      font-size: 3rem;
+      font-family: monospace;
+      color: var(--gold-lt);
+      margin: 1rem 0;
+    }
+
+    .final-score.negative { color: var(--wrong); }
+
+    .leaderboard {
+      margin: 2rem auto;
+      max-width: 420px;
+      text-align: left;
+    }
+
+    .leaderboard h3 {
+      font-size: 0.8rem;
+      font-family: monospace;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      text-align: center;
+    }
+
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .lb-row:first-of-type { border-top: 1px solid var(--border); }
+
+    .lb-rank { color: var(--muted); width: 2rem; }
+    .lb-name { flex: 1; color: var(--text); }
+    .lb-score { color: var(--gold-lt); font-weight: bold; }
+
+    .lb-row.highlight { background: rgba(212,160,23,0.1); }
+
+    .lb-empty {
+      text-align: center;
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 1rem;
+    }
+
+    /* ── Scores link ─────────────────────────────────────── */
+    .scores-link a {
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.75rem;
+      text-decoration: none;
+    }
+
+    .scores-link a:hover { color: var(--gold); text-decoration: underline; }
+
+    /* ── Endorsement quote ───────────────────────────────── */
+    .endorsement {
+      margin: 2rem auto 0;
+      padding: 1.25rem 1.5rem;
+      border-left: 3px solid var(--gold);
+      text-align: left;
+      background: var(--surface);
+      border-radius: 0 4px 4px 0;
+      max-width: 420px;
+    }
+
+    .endorsement p {
+      color: var(--text);
+      font-style: italic;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+
+    .endorsement cite {
+      color: var(--gold);
+      font-family: monospace;
+      font-size: 0.8rem;
+      font-style: normal;
+    }
+
+    /* ── Leaderboard modal ───────────────────────────────── */
+    .lb-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lb-modal-overlay.open { display: flex; }
+
+    .lb-modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 440px;
+      width: 90%;
+    }
+
+    .lb-modal-box h3 {
+      font-size: 0.8rem;
+      font-family: monospace;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      text-align: center;
+    }
+
+    /* ── Loading ─────────────────────────────────────── */
+    #screen-loading {
+      text-align: center;
+      padding-top: 4rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    #screen-loading p { margin-top: 1rem; }
+
+    .spinner {
+      display: inline-block;
+      width: 2rem;
+      height: 2rem;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ───────────────────────────────────────── */
+    #screen-error {
+      text-align: center;
+      padding-top: 4rem;
+      color: var(--wrong);
+    }
+
+    #screen-error p { margin-top: 1rem; color: var(--muted); }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 500px) {
+      header h1 { font-size: 1.3rem; }
+      .card-clue { font-size: 1rem; }
+      .btn { font-size: 0.9rem; padding: 0.7rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Jeopardy Trainer</h1>
+  <p>datasorcerer.net</p>
+</header>
+
+<main>
+
+  <!-- Loading -->
+  <div id="screen-loading" class="screen active">
+    <div class="spinner"></div>
+    <p>Shuffling the board...</p>
+  </div>
+
+  <!-- Error -->
+  <div id="screen-error" class="screen">
+    <h2>Something went wrong</h2>
+    <p id="error-msg">Could not connect to the game server.</p>
+    <button class="btn btn-gold" style="margin-top:1.5rem" onclick="location.reload()">Try Again</button>
+  </div>
+
+  <!-- Start -->
+  <div id="screen-start" class="screen">
+    <h2>Enter Your Name</h2>
+    <p>30 questions + Final Jeopardy. Honor system. Don't cheat yourself.</p>
+    <div class="start-form">
+      <input type="text" id="player-name" placeholder="Your name" maxlength="50" autocomplete="off" />
+      <button class="btn btn-gold" id="btn-start" onclick="startGame()">Start Game</button>
+    </div>
+    <blockquote class="endorsement">
+      <p>"If this tool was available 10 years ago, I might have been a 3 time champion!"</p>
+      <cite>— Ed Condon, 2-time Jeopardy champion</cite>
+    </blockquote>
+    <div class="scores-link" style="text-align:center; margin-top:1rem;"><a href="#" onclick="openLBModal(); return false;">View today's top scores</a></div>
+  </div>
+
+  <!-- Round 1 Banner -->
+  <div id="screen-round1" class="screen">
+    <div class="round-banner">
+      <h2>Jeopardy! Round</h2>
+      <p>15 questions &nbsp;·&nbsp; $200 – $1,000</p>
+      <button class="btn btn-gold" onclick="beginRound()">Let's Play</button>
+    </div>
+  </div>
+
+  <!-- Round 2 Banner -->
+  <div id="screen-round2" class="screen">
+    <div class="round-banner">
+      <h2>Double Jeopardy!</h2>
+      <p>15 questions &nbsp;·&nbsp; $400 – $2,000</p>
+      <button class="btn btn-gold" onclick="beginRound()">Continue</button>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <div id="screen-question" class="screen">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="meta-row">
+      <span id="q-counter">Question 1 of 30</span>
+      <span class="score-display" id="score-display">$0</span>
+    </div>
+
+    <!-- Top card -->
+    <div class="card card-top">
+      <div class="card-category" id="q-category">CATEGORY</div>
+      <div class="card-meta">
+        <div class="card-value" id="q-value">$200</div>
+        <div class="card-date" id="q-date">Aired: —</div>
+      </div>
+    </div>
+
+    <!-- Clue card -->
+    <div class="card card-clue" id="q-clue">…</div>
+
+    <!-- Answer card -->
+    <div class="card card-answer">
+      <div class="countdown-overlay" id="countdown-overlay">5</div>
+      <div class="answer-text" id="q-answer" style="display:none"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="answer-buttons hidden" id="answer-buttons">
+      <button class="btn btn-correct" onclick="recordAnswer('correct')">✓ Correct</button>
+      <button class="btn btn-skip"    onclick="recordAnswer('skip')">— Didn't Try</button>
+      <button class="btn btn-wrong"   onclick="recordAnswer('wrong')">✗ Incorrect</button>
+    </div>
+  </div>
+
+  <!-- Final Jeopardy -->
+  <div id="screen-final" class="screen">
+    <div class="card card-top" style="justify-content:center; margin-bottom:1rem;">
+      <div style="text-align:center">
+        <div style="font-size:0.75rem;font-family:monospace;color:rgba(255,255,255,0.5);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.3rem">Final Jeopardy!</div>
+        <div class="card-category" id="fj-category">CATEGORY</div>
+      </div>
+    </div>
+
+    <!-- Wager phase -->
+    <div id="fj-wager-phase">
+      <p style="color:var(--muted);margin-bottom:1rem;">Current score: <span style="color:var(--gold-lt);font-family:monospace" id="fj-current-score">$0</span></p>
+      <div class="fj-wager-form">
+        <p style="color:var(--text)">Enter your wager:</p>
+        <input type="number" id="fj-wager-input" min="0" placeholder="0" />
+        <div class="fj-score-note" id="fj-wager-note"></div>
+        <button class="btn btn-gold" onclick="confirmWager()">Lock In Wager</button>
+      </div>
+    </div>
+
+    <!-- Clue + clock phase -->
+    <div id="fj-clue-phase" style="display:none">
+      <div class="card card-clue" id="fj-clue" style="margin-bottom:1rem">…</div>
+      <div class="fj-clock" id="fj-clock">30</div>
+      <div class="card card-answer" style="margin-bottom:1rem">
+        <div class="countdown-overlay" id="fj-answer-overlay">Answer revealed at 0</div>
+        <div class="answer-text" id="fj-answer" style="display:none"></div>
+      </div>
+      <div class="answer-buttons hidden" id="fj-answer-buttons" style="margin-top:0.5rem">
+        <button class="btn btn-correct" onclick="recordFJAnswer('correct')">✓ Correct</button>
+        <button class="btn btn-wrong"   onclick="recordFJAnswer('wrong')">✗ Incorrect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div id="screen-gameover" class="screen">
+    <h2>Game Over</h2>
+    <div class="final-score" id="final-score-display">$0</div>
+    <p id="gameover-name" style="color:var(--muted);font-family:monospace"></p>
+
+    <div class="leaderboard">
+      <h3>// today's top 10</h3>
+      <div id="leaderboard-rows"></div>
+    </div>
+
+    <button class="btn btn-gold" style="margin-top:1rem" onclick="resetGame()">Play Again</button>
+  </div>
+
+
+</main>
+
+<!-- Leaderboard Modal -->
+<div id="lb-modal" class="lb-modal-overlay">
+  <div class="lb-modal-box">
+    <h3>// today's top 10</h3>
+    <div id="lb-modal-rows"></div>
+    <button class="btn btn-gold" style="margin-top:1.5rem;width:100%" onclick="closeLBModal()">Close</button>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const API_BASE = "https://jeopardy-trainer-api.greg-macgowan.workers.dev";
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let gameData       = null;
+let playerName     = "";
+let score          = 0;
+let currentQIndex  = 0;
+let countdownTimer = null;
+let fjWager        = 0;
+let fjClockTimer   = null;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch(`${API_BASE}/api/game`);
+    if (!res.ok) throw new Error("Server error");
+    gameData = await res.json();
+    showScreen("screen-start");
+
+    // Pre-focus name field
+    document.getElementById("player-name").addEventListener("keydown", e => {
+      if (e.key === "Enter") startGame();
+    });
+  } catch (err) {
+    document.getElementById("error-msg").textContent = "Could not load game data. Is the API deployed?";
+    showScreen("screen-error");
+  }
+});
+
+// ── Screen management ─────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ── Start game ────────────────────────────────────────────────────────────────
+function startGame() {
+  const input = document.getElementById("player-name").value.trim();
+  if (!input) { document.getElementById("player-name").focus(); return; }
+  playerName    = input;
+  score         = 0;
+  currentQIndex = 0;
+  showScreen("screen-round1");
+}
+
+// ── Begin a round (after banner screen) ──────────────────────────────────────
+function beginRound() {
+  showQuestion();
+}
+
+// ── Show current question ─────────────────────────────────────────────────────
+function showQuestion() {
+  const q = gameData.questions[currentQIndex];
+  const total = gameData.questions.length;
+
+  // Progress
+  document.getElementById("progress-fill").style.width = `${(currentQIndex / total) * 100}%`;
+  document.getElementById("q-counter").textContent = `Question ${currentQIndex + 1} of ${total}`;
+  updateScoreDisplay();
+
+  // Fill cards
+  document.getElementById("q-category").textContent = q.category;
+  document.getElementById("q-value").textContent    = formatMoney(q.value);
+  document.getElementById("q-date").textContent     = `Aired: ${formatDate(q.air_date)}`;
+  document.getElementById("q-clue").textContent     = q.question;
+  document.getElementById("q-answer").textContent   = q.answer;
+
+  // Reset answer state
+  document.getElementById("q-answer").style.display = "none";
+  document.getElementById("countdown-overlay").classList.remove("hidden");
+  document.getElementById("answer-buttons").classList.add("hidden");
+
+  showScreen("screen-question");
+  startCountdown();
+}
+
+// ── 5-second countdown ────────────────────────────────────────────────────────
+function startCountdown() {
+  clearInterval(countdownTimer);
+  let secs = 10;
+  const overlay = document.getElementById("countdown-overlay");
+  overlay.textContent = secs;
+
+  countdownTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(countdownTimer);
+      revealAnswer();
+    } else {
+      overlay.textContent = secs;
+    }
+  }, 1000);
+}
+
+function revealAnswer() {
+  document.getElementById("countdown-overlay").classList.add("hidden");
+  document.getElementById("q-answer").style.display = "block";
+  document.getElementById("answer-buttons").classList.remove("hidden");
+}
+
+// ── Record answer ─────────────────────────────────────────────────────────────
+function recordAnswer(result) {
+  clearInterval(countdownTimer);
+  const q = gameData.questions[currentQIndex];
+
+  if (result === "correct")  score += q.value;
+  if (result === "wrong")    score -= q.value;
+  // skip: no change
+
+  currentQIndex++;
+  advance();
+}
+
+function advance() {
+  const total = gameData.questions.length;
+
+  if (currentQIndex === 15) {
+    // Show Double Jeopardy banner
+    showScreen("screen-round2");
+    return;
+  }
+
+  if (currentQIndex >= total) {
+    // Go to Final Jeopardy
+    startFinalJeopardy();
+    return;
+  }
+
+  showQuestion();
+}
+
+// ── Final Jeopardy ────────────────────────────────────────────────────────────
+function startFinalJeopardy() {
+  const fj = gameData.finalJeopardy;
+  if (!fj) {
+    // No FJ question available — skip to end
+    endGame();
+    return;
+  }
+
+  document.getElementById("fj-category").textContent      = fj.category;
+  document.getElementById("fj-current-score").textContent = formatMoney(score);
+  document.getElementById("fj-clue").textContent          = fj.question;
+  document.getElementById("fj-answer").textContent        = fj.answer;
+
+  // Reset FJ state
+  document.getElementById("fj-wager-input").value = "";
+  document.getElementById("fj-wager-phase").style.display = "block";
+  document.getElementById("fj-clue-phase").style.display  = "none";
+  document.getElementById("fj-answer").style.display      = "none";
+  document.getElementById("fj-answer-overlay").style.display = "flex";
+  document.getElementById("fj-answer-buttons").classList.add("hidden");
+
+  updateFJWagerNote();
+  document.getElementById("fj-wager-input").addEventListener("input", updateFJWagerNote);
+
+  showScreen("screen-final");
+}
+
+function updateFJWagerNote() {
+  const raw = parseInt(document.getElementById("fj-wager-input").value) || 0;
+  const maxWager = Math.max(score, 0);
+  document.getElementById("fj-wager-note").textContent =
+    `Max wager: ${formatMoney(maxWager)}  ·  Score if correct: ${formatMoney(score + raw)}  ·  If wrong: ${formatMoney(score - raw)}`;
+}
+
+function confirmWager() {
+  const raw = parseInt(document.getElementById("fj-wager-input").value);
+  if (isNaN(raw) || raw < 0) {
+    document.getElementById("fj-wager-input").focus();
+    return;
+  }
+  fjWager = Math.min(raw, Math.max(score, 0));
+
+  document.getElementById("fj-wager-phase").style.display = "none";
+  document.getElementById("fj-clue-phase").style.display  = "block";
+
+  startFJClock();
+}
+
+function startFJClock() {
+  clearInterval(fjClockTimer);
+  let secs = 30;
+  const clock = document.getElementById("fj-clock");
+  clock.textContent = secs;
+  clock.classList.remove("urgent");
+
+  fjClockTimer = setInterval(() => {
+    secs--;
+    clock.textContent = secs;
+    if (secs <= 10) clock.classList.add("urgent");
+    if (secs <= 0) {
+      clearInterval(fjClockTimer);
+      revealFJAnswer();
+    }
+  }, 1000);
+}
+
+function revealFJAnswer() {
+  clearInterval(fjClockTimer);
+  document.getElementById("fj-answer-overlay").style.display = "none";
+  document.getElementById("fj-answer").style.display         = "block";
+  document.getElementById("fj-answer-buttons").classList.remove("hidden");
+}
+
+function recordFJAnswer(result) {
+  if (result === "correct") score += fjWager;
+  if (result === "wrong")   score -= fjWager;
+  endGame();
+}
+
+// ── End game ──────────────────────────────────────────────────────────────────
+async function endGame() {
+  // Submit score
+  try {
+    await fetch(`${API_BASE}/api/score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ player_name: playerName, score })
+    });
+  } catch (e) { /* best effort */ }
+
+  // Show game over screen
+  const scoreEl = document.getElementById("final-score-display");
+  scoreEl.textContent = formatMoney(score);
+  scoreEl.className   = "final-score" + (score < 0 ? " negative" : "");
+  document.getElementById("gameover-name").textContent = playerName;
+  document.getElementById("progress-fill").style.width = "100%";
+
+  showScreen("screen-gameover");
+  loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+  const container = document.getElementById("leaderboard-rows");
+  container.innerHTML = "";
+
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard`);
+    const data = await res.json();
+
+    if (!data.scores || data.scores.length === 0) {
+      container.innerHTML = '<div class="lb-empty">No scores yet today — you could be first.</div>';
+      return;
+    }
+
+    data.scores.forEach((entry, i) => {
+      const isMe = entry.player_name === playerName && entry.score === score;
+      const row = document.createElement("div");
+      row.className = "lb-row" + (isMe ? " highlight" : "");
+      row.innerHTML = `
+        <span class="lb-rank">#${i + 1}</span>
+        <span class="lb-name">${escapeHtml(entry.player_name)}</span>
+        <span class="lb-score">${formatMoney(entry.score)}</span>
+      `;
+      container.appendChild(row);
+    });
+  } catch {
+    container.innerHTML = '<div class="lb-empty">Could not load leaderboard.</div>';
+  }
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetGame() {
+  showScreen("screen-loading");
+  fetch(`${API_BASE}/api/game`)
+    .then(r => r.json())
+    .then(data => {
+      gameData       = data;
+      score          = 0;
+      currentQIndex  = 0;
+      showScreen("screen-start");
+    })
+    .catch(() => showScreen("screen-error"));
+}
+
+// ── Leaderboard modal ─────────────────────────────────────────────────────────
+async function openLBModal() {
+  const modal = document.getElementById("lb-modal");
+  const container = document.getElementById("lb-modal-rows");
+  container.innerHTML = '<div class="lb-empty">Loading...</div>';
+  modal.classList.add("open");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard`);
+    const data = await res.json();
+    container.innerHTML = "";
+
+    if (!data.scores || data.scores.length === 0) {
+      container.innerHTML = '<div class="lb-empty">No scores yet today — be the first.</div>';
+      return;
+    }
+
+    data.scores.forEach((entry, i) => {
+      const row = document.createElement("div");
+      row.className = "lb-row";
+      row.innerHTML = `
+        <span class="lb-rank">#${i + 1}</span>
+        <span class="lb-name">${escapeHtml(entry.player_name)}</span>
+        <span class="lb-score">${formatMoney(entry.score)}</span>
+      `;
+      container.appendChild(row);
+    });
+  } catch {
+    container.innerHTML = '<div class="lb-empty">Could not load scores.</div>';
+  }
+}
+
+function closeLBModal() {
+  document.getElementById("lb-modal").classList.remove("open");
+}
+
+// Close modal on backdrop click
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("lb-modal").addEventListener("click", function(e) {
+    if (e.target === this) closeLBModal();
+  });
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function updateScoreDisplay() {
+  const el = document.getElementById("score-display");
+  el.textContent = formatMoney(score);
+  el.className   = "score-display" + (score < 0 ? " negative" : "");
+}
+
+function formatMoney(n) {
+  if (n < 0) return `-$${Math.abs(n).toLocaleString()}`;
+  return `$${n.toLocaleString()}`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+</script>
+</body>
+</html>
