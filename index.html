@@ -186,9 +186,17 @@
       font-size: 0.97rem;
     }
 
-    /* ── Outside ────────────────────────────────────── */
-    #outside .highlight {
-      color: var(--teal);
+    /* ── The Sorcerer, Applied ──────────────────────── */
+    .story {
+      border-left: 3px solid var(--gold-dim);
+      padding-left: 1.25rem;
+      margin: 1.75rem 0;
+    }
+
+    .story-hook {
+      font-style: italic;
+      color: var(--heading);
+      margin-bottom: 0.5rem;
     }
 
     /* ── Portfolio ──────────────────────────────────── */
@@ -284,7 +292,7 @@
     <ul class="nav-links">
       <li><a href="#who">About</a></li>
       <li><a href="#how">Principles</a></li>
-      <li><a href="#outside">Outside Work</a></li>
+      <li><a href="#applied">In Practice</a></li>
       <li><a href="#portfolio">Portfolio</a></li>
     </ul>
   </nav>
@@ -365,32 +373,36 @@
     </div>
   </section>
 
-  <!-- Outside the Spreadsheets -->
-  <section id="outside">
+  <!-- The Sorcerer, Applied -->
+  <section id="applied">
     <div class="container">
-      <p class="section-label">// outside the spreadsheets</p>
-      <h2>Same guy. Different systems.</h2>
+      <p class="section-label">// the sorcerer, applied</p>
+      <h2>Same power, different fires.</h2>
       <p>
-        When I'm not knee-deep in data, I'm usually knee-deep in a different kind of system.
-        I'm a "spreadsheet sim" guy at heart — <span class="highlight">Out of the Park Baseball</span>,
-        <span class="highlight">Battletech</span>, <span class="highlight">Rule the Waves 3</span>,
-        and lately <span class="highlight">Football Manager</span>. If it has depth, numbers,
-        and a strategy layer, I'm in.
+        The Sorcerer thing isn't just a fun title — it's how I actually work when a problem shows up sideways.
       </p>
+      <div class="story">
+        <p class="story-hook">A dashboard was bleeding $70 every time someone refreshed it.</p>
+        <p>Nobody had flagged it — it just looked like normal compute. I traced it to a single value buried
+        in unstructured text, forcing a full regex scan of a massive table on every refresh. The fix wasn't
+        clever code, it was seeing the invisible cost: pull that value out once, upstream, into its own column.
+        $70 became a rounding error.</p>
+      </div>
+      <div class="story">
+        <p class="story-hook">A $9M/quarter leak that was invisible until the money was already gone.</p>
+        <p>Trade-in offer value was being measured 45 days after the fact — accurate, but useless, like reading
+        yesterday's stock price to make today's trade. I built a same-day model instead. Same rigor, delivered
+        while it still mattered.</p>
+      </div>
+      <div class="story">
+        <p class="story-hook">When a schema breaks, someone has to be in the room who remembers why it was built that way.</p>
+        <p>I was one of four people who rewrote how the company measured revenue per account from the ground up.
+        The boring part was the six months of rulings. The important part was building it to survive device
+        categories that didn't exist yet — so nobody would have to relitigate it later. It's still the standard.</p>
+      </div>
       <p>
-        I also sim race — not particularly well, but I once beat NASCAR Hall of Famer
-        Bobby Labonte in an iRacing event. (In fairness, he got wrecked by someone else
-        four laps in. I'll take the win anyway.)
-      </p>
-      <p>
-        I lead an alliance in a mobile strategy game, where — no surprise — I built a
-        dedicated planning channel so our generals could actually execute complex plans
-        instead of freezing under pressure. Old habits.
-      </p>
-      <p>
-        Above all, I'm a present father to four sons and a husband who made a promise
-        a long time ago that work would never come before family dinner — and 25 years
-        later, that's still true.
+        That's the actual trick. Not magic — two decades of pattern recognition, and enough range to go from
+        "put this fire out by 5pm" to "rebuild the foundation so it doesn't happen again."
       </p>
     </div>
   </section>
