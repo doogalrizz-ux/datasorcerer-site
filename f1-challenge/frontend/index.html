@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 SQL Challenge — datasorcerer.net</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0a;
+      --surface:  #141414;
+      --surface2: #1e1e1e;
+      --red:      #e10600;
+      --red-lt:   #ff2a20;
+      --gold:     #ffd700;
+      --text:     #f0f0f0;
+      --muted:    #888;
+      --border:   #2a2a2a;
+      --pass:     #2ecc71;
+      --fail:     #e74c3c;
+      --open:     #f39c12;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    header {
+      background: var(--red);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 3px solid #000;
+    }
+
+    .f1-logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      font-family: monospace;
+      color: #fff;
+      letter-spacing: -0.05em;
+      white-space: nowrap;
+    }
+
+    .f1-logo span { color: var(--gold); }
+
+    header h1 {
+      font-size: 1.1rem;
+      color: #fff;
+      font-weight: normal;
+    }
+
+    header p {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      font-family: monospace;
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section h3 {
+      font-size: 0.7rem;
+      font-family: monospace;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Question list */
+    .q-item {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+
+    .q-item:hover { border-color: var(--red); background: var(--surface2); }
+    .q-item.active { border-color: var(--red); background: var(--surface2); }
+
+    .q-num {
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: var(--red);
+      margin-bottom: 0.3rem;
+    }
+
+    .q-text {
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--text);
+    }
+
+    .q-badge {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: none;
+    }
+
+    .q-badge.pass { background: var(--pass); display: block; }
+    .q-badge.fail { background: var(--fail); display: block; }
+    .q-badge.open { background: var(--open); display: block; }
+
+    /* Schema reference */
+    .schema-table {
+      margin-bottom: 0.75rem;
+    }
+
+    .schema-table-name {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--gold);
+      margin-bottom: 0.25rem;
+    }
+
+    .schema-cols {
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.7;
+      padding-left: 0.75rem;
+    }
+
+    /* ── Main area ───────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    /* Question banner */
+    .q-banner {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+
+    .q-banner-num {
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.3rem;
+    }
+
+    .q-banner-text {
+      font-size: 1.05rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .q-hint {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: monospace;
+      display: none;
+    }
+
+    .q-hint.visible { display: block; }
+
+    .hint-toggle {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-top: 0.4rem;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .hint-toggle:hover { color: var(--text); }
+
+    /* Editor area */
+    .editor-area {
+      padding: 1rem 1.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .editor-label {
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea#sql-input {
+      width: 100%;
+      height: 140px;
+      background: var(--surface2);
+      color: #d4d4d4;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+    }
+
+    textarea#sql-input:focus { border-color: var(--red); }
+
+    .editor-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.6rem;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.6rem 1.4rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: 0.03em;
+    }
+
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn:hover:not(:disabled) { opacity: 0.85; }
+
+    .btn-run { background: var(--red); color: #fff; }
+    .btn-check { background: var(--gold); color: #000; }
+    .btn-clear { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+    .run-note {
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* Results area */
+    .results-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.5rem;
+    }
+
+    /* Verdict banner */
+    .verdict {
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      font-family: monospace;
+      font-size: 0.88rem;
+    }
+
+    .verdict.pass { display: block; background: rgba(46,204,113,0.12); border: 1px solid var(--pass); color: var(--pass); }
+    .verdict.fail { display: block; background: rgba(231,76,60,0.12); border: 1px solid var(--fail); color: var(--fail); }
+    .verdict.open { display: block; background: rgba(243,156,18,0.12); border: 1px solid var(--open); color: var(--open); }
+    .verdict.error { display: block; background: rgba(231,76,60,0.08); border: 1px solid #555; color: var(--fail); }
+
+    /* Results table */
+    .results-meta {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table.results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: monospace;
+      font-size: 0.82rem;
+    }
+
+    .results-table th {
+      background: var(--surface2);
+      color: var(--red);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .results-table td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .results-table tr:hover td { background: var(--surface2); }
+
+    .empty-state {
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="f1-logo">F1<span>▶</span></div>
+  <h1>SQL Challenge</h1>
+  <p>datasorcerer.net</p>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h3>Questions</h3>
+      <div id="q-list"></div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Schema</h3>
+      <div id="schema-ref"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <div class="q-banner">
+      <div class="q-banner-num" id="q-banner-num">Select a question →</div>
+      <div class="q-banner-text" id="q-banner-text">Choose a question from the sidebar to begin.</div>
+      <button class="hint-toggle" id="hint-toggle" style="display:none" onclick="toggleHint()">Show hint</button>
+      <div class="q-hint" id="q-hint"></div>
+    </div>
+
+    <div class="editor-area">
+      <div class="editor-label">SQL Editor</div>
+      <textarea id="sql-input" placeholder="-- Write your SQL here&#10;SELECT ..." spellcheck="false"></textarea>
+      <div class="editor-actions">
+        <button class="btn btn-run" onclick="runQuery()" id="btn-run">▶ Run</button>
+        <button class="btn btn-check" onclick="checkAnswer()" id="btn-check">✓ Check Answer</button>
+        <button class="btn btn-clear" onclick="clearEditor()">Clear</button>
+        <span class="run-note">SELECT only · max 500 rows</span>
+      </div>
+    </div>
+
+    <div class="results-area">
+      <div class="verdict" id="verdict"></div>
+      <div class="results-meta" id="results-meta"></div>
+      <div class="table-wrap">
+        <div class="empty-state" id="empty-state">Run a query to see results.</div>
+        <table class="results-table" id="results-table" style="display:none">
+          <thead id="results-head"></thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://f1-challenge-api.greg-macgowan.workers.dev";
+
+let questions = [];
+let activeQId = null;
+let hintVisible = false;
+let qStatus = {};  // qId -> 'pass' | 'fail' | 'open'
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch(`${API_BASE}/api/questions`);
+    const data = await res.json();
+    questions = data.questions;
+    renderSidebar(data.schema);
+  } catch (e) {
+    document.getElementById("q-banner-text").textContent = "Could not connect to the API. Is the Worker deployed?";
+  }
+});
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+function renderSidebar(schema) {
+  const qList = document.getElementById("q-list");
+  questions.forEach(q => {
+    const el = document.createElement("div");
+    el.className = "q-item";
+    el.id = `q-item-${q.id}`;
+    el.onclick = () => selectQuestion(q.id);
+    el.innerHTML = `
+      <div class="q-num">Q${q.id}</div>
+      <div class="q-text">${q.question}</div>
+      <div class="q-badge" id="badge-${q.id}"></div>
+    `;
+    qList.appendChild(el);
+  });
+
+  const schemaRef = document.getElementById("schema-ref");
+  schema.tables.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "schema-table";
+    el.innerHTML = `
+      <div class="schema-table-name">${t.name}</div>
+      <div class="schema-cols">${t.columns.join("\n")}</div>
+    `;
+    schemaRef.appendChild(el);
+  });
+}
+
+function selectQuestion(id) {
+  activeQId = id;
+  hintVisible = false;
+  const q = questions.find(q => q.id === id);
+
+  document.querySelectorAll(".q-item").forEach(el => el.classList.remove("active"));
+  document.getElementById(`q-item-${id}`).classList.add("active");
+
+  document.getElementById("q-banner-num").textContent = `Question ${id} of ${questions.length}`;
+  document.getElementById("q-banner-text").textContent = q.question;
+  document.getElementById("q-hint").textContent = q.hint;
+  document.getElementById("q-hint").classList.remove("visible");
+  document.getElementById("hint-toggle").style.display = "inline";
+  document.getElementById("hint-toggle").textContent = "Show hint";
+
+  clearResults();
+}
+
+function toggleHint() {
+  hintVisible = !hintVisible;
+  document.getElementById("q-hint").classList.toggle("visible", hintVisible);
+  document.getElementById("hint-toggle").textContent = hintVisible ? "Hide hint" : "Show hint";
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────────
+function clearEditor() {
+  document.getElementById("sql-input").value = "";
+  clearResults();
+}
+
+function clearResults() {
+  document.getElementById("verdict").className = "verdict";
+  document.getElementById("verdict").textContent = "";
+  document.getElementById("results-meta").textContent = "";
+  document.getElementById("results-table").style.display = "none";
+  document.getElementById("empty-state").style.display = "block";
+  document.getElementById("empty-state").textContent = "Run a query to see results.";
+}
+
+// ── Run query ─────────────────────────────────────────────────────────────────
+async function runQuery() {
+  const sql = document.getElementById("sql-input").value.trim();
+  if (!sql) return;
+
+  setLoading(true);
+  clearResults();
+
+  try {
+    const res = await fetch(`${API_BASE}/api/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      showError(data.error);
+    } else {
+      showResults(data.rows, data.count);
+    }
+  } catch (e) {
+    showError("Could not reach the API.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Check answer ──────────────────────────────────────────────────────────────
+async function checkAnswer() {
+  if (!activeQId) { alert("Select a question first."); return; }
+  const sql = document.getElementById("sql-input").value.trim();
+  if (!sql) return;
+
+  setLoading(true);
+  clearResults();
+
+  try {
+    const res = await fetch(`${API_BASE}/api/check/${activeQId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      showError(data.error);
+    } else {
+      showResults(data.rows, data.count);
+      showVerdict(data);
+      updateBadge(activeQId, data.pass);
+    }
+  } catch (e) {
+    showError("Could not reach the API.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Display helpers ───────────────────────────────────────────────────────────
+function showResults(rows, count) {
+  document.getElementById("empty-state").style.display = "none";
+
+  if (!rows || rows.length === 0) {
+    document.getElementById("empty-state").style.display = "block";
+    document.getElementById("empty-state").textContent = "Query ran successfully but returned no rows.";
+    document.getElementById("results-meta").textContent = "0 rows";
+    return;
+  }
+
+  const cols = Object.keys(rows[0]);
+  const head = document.getElementById("results-head");
+  const body = document.getElementById("results-body");
+
+  head.innerHTML = "<tr>" + cols.map(c => `<th>${escHtml(c)}</th>`).join("") + "</tr>";
+  body.innerHTML = rows.map(row =>
+    "<tr>" + cols.map(c => `<td>${escHtml(row[c] ?? "")}</td>`).join("") + "</tr>"
+  ).join("");
+
+  document.getElementById("results-table").style.display = "table";
+  document.getElementById("results-meta").textContent =
+    `${count} row${count !== 1 ? "s" : ""}${count === 500 ? " (limit reached)" : ""}`;
+}
+
+function showVerdict(data) {
+  const el = document.getElementById("verdict");
+  if (data.pass === true)  { el.className = "verdict pass"; el.textContent = "✓ " + data.message; }
+  if (data.pass === false) { el.className = "verdict fail"; el.textContent = "✗ " + data.message; }
+  if (data.pass === null)  { el.className = "verdict open"; el.textContent = "◎ " + data.message; }
+}
+
+function showError(msg) {
+  const el = document.getElementById("verdict");
+  el.className = "verdict error";
+  el.textContent = "Error: " + msg;
+  document.getElementById("empty-state").style.display = "none";
+}
+
+function updateBadge(qId, pass) {
+  const badge = document.getElementById(`badge-${qId}`);
+  if (!badge) return;
+  badge.className = "q-badge " + (pass === true ? "pass" : pass === false ? "fail" : "open");
+}
+
+function setLoading(on) {
+  document.getElementById("btn-run").disabled = on;
+  document.getElementById("btn-check").disabled = on;
+  document.getElementById("btn-run").textContent = on ? "Running…" : "▶ Run";
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Tab key in textarea inserts spaces instead of losing focus
+document.getElementById("sql-input").addEventListener("keydown", e => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const el = e.target;
+    const start = el.selectionStart;
+    el.value = el.value.slice(0, start) + "  " + el.value.slice(el.selectionEnd);
+    el.selectionStart = el.selectionEnd = start + 2;
+  }
+  // Ctrl+Enter or Cmd+Enter to run
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    runQuery();
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+name = "jeopardy-trainer-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jeopardy-db"
+database_id = "b3127ba2-56ad-4dcc-8b66-bc6a77ee5525"

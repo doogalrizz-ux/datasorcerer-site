@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.key
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
+
+# Cloudflare Workers (wrangler local cache/state — includes account info)
+.wrangler/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

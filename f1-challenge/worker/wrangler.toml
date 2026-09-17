@@ -1,0 +1,8 @@
+name = "f1-challenge-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "f1-challenge-db"
+database_id = "1927c6a1-fb43-423d-9be9-d0724c50cc08"
