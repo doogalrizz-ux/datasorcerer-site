@@ -1,18 +1,20 @@
 """
 process_questions.py
 One-time script to pre-process 200k_questions.json into SQL for Cloudflare D1 import.
-Run from: d:/Programing Projects/
-Output: jeopardy-trainer/scripts/import_batch1.sql (up to 99k rows)
-        jeopardy-trainer/scripts/import_batch2.sql (remainder)
+Usage: python process_questions.py path/to/200k_questions.json
+Output (next to this script): import_batch1.sql (up to 99k rows)
+                              import_batch2.sql (remainder)
 """
 
 import json
 import os
 import re
+import sys
 from collections import defaultdict
+from pathlib import Path
 
-SOURCE = "200k_questions.json"
-OUT_DIR = "jeopardy-trainer/scripts"
+SOURCE = sys.argv[1] if len(sys.argv) > 1 else "200k_questions.json"
+OUT_DIR = Path(__file__).resolve().parent
 BATCH_SIZE = 90000  # stay under 100k/day D1 limit with margin
 
 print("Loading questions...")

@@ -1,14 +1,17 @@
 """
 Extract F1 data from Excel into SQL files for Cloudflare D1.
-Run from: d:/Programing Projects/
+Usage: python extract_data.py "path/to/F1 Tables.xlsx"
+SQL files are written next to this script.
 """
 
 import openpyxl
 import re
 import os
+import sys
+from pathlib import Path
 
-EXCEL_PATH = "F1 Challange Test/F1 Tables.xlsx"
-OUT_DIR = "f1-challenge/scripts"
+EXCEL_PATH = sys.argv[1] if len(sys.argv) > 1 else "F1 Tables.xlsx"
+OUT_DIR = Path(__file__).resolve().parent
 
 def clean(val):
     if val is None:
